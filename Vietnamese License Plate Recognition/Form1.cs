@@ -12,10 +12,10 @@ using Emgu.CV.Dnn;
 using Emgu.CV.Util;
 using Emgu.CV.Structure;
 using Emgu.CV.CvEnum;
-using Tesseract;
 using System.Drawing.Imaging;
 using System.IO;
 using Python.Runtime;
+using System.Diagnostics;
 
 namespace Vietnamese_License_Plate_Recognition
 {
@@ -47,7 +47,7 @@ namespace Vietnamese_License_Plate_Recognition
                     pictureBox6.InitialImage = null;
                     pictureBox6.Image = clonedImg;
                 }
-                ProcessImage(open.FileName, pictureBox6);
+                ProcessImage(open.FileName);
             }
         }
         public static List<float[]> ArrayTo2DList(Array array)
@@ -71,7 +71,8 @@ namespace Vietnamese_License_Plate_Recognition
             return list;
         }
         //Hàm xử lý biển số xe 
-        public void ProcessImage(string path, PictureBox pictureBox6)
+        string textPlates = "";
+        public void ProcessImage(string path)
         {
             try
             {
@@ -111,25 +112,17 @@ namespace Vietnamese_License_Plate_Recognition
                             Rectangle plate = new Rectangle(x, y, width, height);
                             Image<Bgr, byte> imageCrop = img.Clone();
                             imageCrop.ROI = plate;
-                            pictureBox2.Image = imageCrop.ToBitmap();                       
-                            IdentifyContours(imageCrop.Resize(500, 500, Inter.Cubic, preserveScale: true)); 
+                            imageCrop = imageCrop.Resize(500, 500, Inter.Cubic, preserveScale: true);
+                            Image<Gray, byte> srcGray = imageCrop.Convert<Gray, byte>();
+                            CvInvoke.Imwrite("imgtest.jpg", imageCrop);
+                            pictureBox3.Image = imageCrop.ToBitmap();
+                            textPlates = func();
+                            textBox1.Text = textPlates;
+                            //IdentifyContours(imageCrop.Resize(500, 500, Inter.Cubic, preserveScale: true)); 
                         }
                     }
 
                 }
-                //Vẽ boxes detect được
-                //var idx = DnnInvoke.NMSBoxes(bboxes,scores, confThreshold, nmsThreshold, indices);
-                //var imgOutput = img.Clone();
-                //for (int i = 0; i < idx.Length; i++)
-                //{
-                //    int index = idx[i];
-                //    var bbox = bboxes[index];
-                //    imgOutput.Draw(bbox, new Bgr(0, 255, 0), 2);
-                //    CvInvoke.PutText(imgOutput, ClassLabels[indices[index]], new Point(bbox.X, bbox.Y + 20),
-                //        FontFace.HersheySimplex, 1.0, new MCvScalar(0, 0, 255), 2);
-                //}
-                //var input = DnnInvoke.BlobFromImage(img, 1 / 255.0, swapRB: true);
-                Image<Bgr, byte> image2 = img;
             }
             catch (Exception ex)
             {
@@ -144,6 +137,7 @@ namespace Vietnamese_License_Plate_Recognition
             //srcGray = srcGray.Dilate(2);
             CvInvoke.AdaptiveThreshold(srcGray, imageT, 255.0, AdaptiveThresholdType.MeanC, ThresholdType.BinaryInv, 51, 9);           
             Image<Gray, byte> imageThresh = imageT;
+            //CvInvoke.Imwrite(@"D:\PaddleOCR\imgtest2.jpg", imageT);
             pictureBox3.Image = imageT.ToBitmap();
             imageT = imageT.ThresholdBinary(new Gray(100), new Gray(255.0));//Cần xử lý thêm
             var rate = (double)imageT.Width/(double)imageT.Height;
@@ -243,7 +237,7 @@ namespace Vietnamese_License_Plate_Recognition
             }
             //Console.WriteLine(listRect.Count);
             textBox1.Text = textPlates;
-            pictureBox2.Image = colorImage.ToBitmap();
+            //pictureBox2.Image = colorImage.ToBitmap();
         }
 
         public void ArrangePlates(List<Rectangle> listRect, bool isTwoPlates, List<Rectangle> up, List<Rectangle> dow)
@@ -402,14 +396,20 @@ namespace Vietnamese_License_Plate_Recognition
             {
                 using (PyScope scope = Py.CreateScope())
                 {
+                    Console.WriteLine(Application.StartupPath);
                     string code = File.ReadAllText("reconigtion_character.py");
 
                     var scriptCompiled = PythonEngine.Compile(code);
 
                     scope.Execute(scriptCompiled);
-                    func = scope.Get("output");
+                    func = scope.Get("inference");
                 }
             }
+        }
+
+        private void pictureBox6_Click(object sender, EventArgs e)
+        {
+
         }
     }
 }

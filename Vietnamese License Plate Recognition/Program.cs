@@ -1,8 +1,10 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using System.Threading.Tasks;
 using System.Windows.Forms;
+using TD.VLPR;
 
 namespace Vietnamese_License_Plate_Recognition
 {
@@ -14,15 +16,14 @@ namespace Vietnamese_License_Plate_Recognition
         [STAThread]
         static void Main()
         {
-            //Application.EnableVisualStyles();
-            //Application.SetCompatibleTextRenderingDefault(false);
-            //Application.Run(new Form1());
+            Application.EnableVisualStyles();
+            Application.SetCompatibleTextRenderingDefault(false);
+            Application.Run(new Form1());
 
-
-            var imgHelper = new ImageHelper();
-            string path = @"D:\Download Chorme\GreenParking\GreenParking\0110_01653_b.jpg";
-            var result = imgHelper.ProcessImage(path);
-            Console.WriteLine(result);
+            //var extracter = new NumberPlateExtracter();
+            //string path = @"D:\Download Chorme\CarTGMT\CarTGMT\test10.jpg";
+            //string result = extracter.ProcessImage(path);
+            //Console.WriteLine(result);
         }
     }
 }

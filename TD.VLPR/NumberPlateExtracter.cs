@@ -6,6 +6,7 @@ using Emgu.CV.Util;
 using Python.Runtime;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Drawing;
 using System.IO;
 using System.Linq;
@@ -13,14 +14,23 @@ using System.Text;
 using System.Threading.Tasks;
 using System.Windows.Forms;
 
-namespace Vietnamese_License_Plate_Recognition
+namespace TD.VLPR
 {
-    public class ImageHelper
+    public class NumberPlateExtracter
     {
-        Net Model = null;
-        string PathConfig = "yolov3.cfg";
-        string PathWeights = "yolov3_6000_LP.weights";
+        private string PathConfig;
+        private string PathWeights;
         dynamic func;
+        Net Model = null;
+
+        public NumberPlateExtracter(
+            string pathConfig = "yolov3.cfg",
+            string pathWeights = "yolov3_6000_LP.weights")
+        {
+            PathConfig = pathConfig;
+            PathWeights = pathWeights;
+            LoadModelRecognize();
+        }
 
         public static List<float[]> ArrayTo2DList(Array array)
         {
@@ -43,15 +53,15 @@ namespace Vietnamese_License_Plate_Recognition
             return list;
         }
 
+        string result = string.Empty;
         //Hàm trích xuất thông tin biển số xe từ đường dẫn ảnh
         public string ProcessImage(string path)
-        {
-            LoadModelRecognize();
-            string result="";
+        {            
             try
             {
                 float confThreshold = 0.8f;
                 int imgDefaultSize = 416;
+
                 //Detect biển số xe                
                 var img = new Image<Bgr, byte>(path).Resize(imgDefaultSize, imgDefaultSize, Inter.Cubic);
                 var input = DnnInvoke.BlobFromImage(img, 1 / 255.0, swapRB: true);
@@ -87,8 +97,10 @@ namespace Vietnamese_License_Plate_Recognition
                             Rectangle plate = new Rectangle(x, y, width, height);
                             Image<Bgr, byte> imageCrop = img.Clone();
                             imageCrop.ROI = plate;
-                            result = IdentifyContours(imageCrop.Resize(500, 500, Inter.Cubic, preserveScale: true));//Hàm tìm contour                                                                                                                  
-                        }
+                            imageCrop = imageCrop.Resize(500, 500, Inter.Cubic, preserveScale: true);
+                            CvInvoke.Imwrite("imgtest.jpg", imageCrop);
+                            result = func();                                                                                                                                                                   
+                        }                     
                     }
 
                 }  
@@ -108,7 +120,7 @@ namespace Vietnamese_License_Plate_Recognition
             Image<Gray, byte> imageT = new Image<Gray, byte>(srcGray.Width, srcGray.Height);
             CvInvoke.AdaptiveThreshold(srcGray, imageT, 255.0, AdaptiveThresholdType.MeanC, ThresholdType.BinaryInv, 51, 9);
             Image<Gray, byte> imageThresh = imageT;
-            //pictureBox3.Image = imageT.ToBitmap();
+
             imageT = imageT.ThresholdBinary(new Gray(100), new Gray(255.0));//Cần xử lý thêm để cải thiện
             var rate = (double)imageT.Width / (double)imageT.Height;
             VectorOfVectorOfPoint contour = new VectorOfVectorOfPoint();
@@ -121,14 +133,12 @@ namespace Vietnamese_License_Plate_Recognition
                 //Biển 1 dòng
                 if (rate > 3)//Tỉ lệ dài / rộng
                 {
-                    Console.WriteLine("Day la bien 1 dong");
                     for (int c = 0; c < contour.Size; c++)
                     {
                         Rectangle rect = CvInvoke.BoundingRectangle(contour[c]);
                         if (rect.Width > 15 && rect.Width < 80 && rect.Height > 35 && rect.Height < 100 && rect.X > 10 && rect.Y > 10)
                         {
                             if (max_H < rect.Height) max_H = rect.Height;
-                            //Console.WriteLine("X: {0}, Y: {1}, W: {2}, H: {3}", rect.X, rect.Y, rect.Width, rect.Height);
                             CvInvoke.Rectangle(colorImage, rect, new MCvScalar(0, 0, 255), 1);
                             listRect.Add(rect);
                         }
@@ -156,14 +166,12 @@ namespace Vietnamese_License_Plate_Recognition
                 //Biển 2 dòng
                 else
                 {
-                    Console.WriteLine("Day la bien 2 dong");
                     for (int c = 0; c < contour.Size; c++)
                     {
                         Rectangle rect = CvInvoke.BoundingRectangle(contour[c]);
                         if (rect.Width > 20 && rect.Width < 150 && rect.Height > 70 && rect.Height < 170 && rect.X > 10 && rect.Y > 10)
                         {
                             if (max_H < rect.Height) max_H = rect.Height;
-                            //Console.WriteLine("X: {0}, Y: {1}, W: {2}, H: {3}", rect.X, rect.Y, rect.Width, rect.Height);
                             CvInvoke.Rectangle(colorImage, rect, new MCvScalar(0, 0, 255), 1);
                             listRect.Add(rect);
                         }
@@ -301,7 +309,9 @@ namespace Vietnamese_License_Plate_Recognition
         }
         public void LoadModelRecognize()
         {
-            Model = DnnInvoke.ReadNetFromDarknet(PathConfig, PathWeights);//Load model detect LP
+            //Load model detect LP
+            Model = DnnInvoke.ReadNetFromDarknet(PathConfig, PathWeights);
+
             //Executing Python Code Script
             using (Py.GIL())
             {
@@ -312,7 +322,8 @@ namespace Vietnamese_License_Plate_Recognition
                     var scriptCompiled = PythonEngine.Compile(code);
 
                     scope.Execute(scriptCompiled);
-                    func = scope.Get("output");
+
+                    func = scope.Get("inference");
                 }
             }
         }
