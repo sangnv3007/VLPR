@@ -15,16 +15,10 @@ Hiện tại chương trình vẫn chưa hoàn thiện, thuật toán nhận d�
 ### Cài đặt các nuget package cần thiết trên VS Studio 2019(. NET 4.7.1)
 * Emgu.CV 4.5.5.4823
 * Emgu.CV.runtime.windows 4.5.5.4823
-* Python.Runtime.Windows 3.7.2
 * DynamicLanguageRuntime 1.3.1
-### Tools and Libraries(Python)
-* Python(3.7)
-* paddlepaddle
-    * pip install paddlepaddle
-* paddleocr
-    * pip install paddleocr
-### Tài nguyên cần thiết(yolov3.cf,yolov3_6000_LP.weights, reconigtion_character.py)
-* Dowload 3 file trong thư mục "backup" https://drive.google.com/drive/folders/1AOwlf1i7SldTr-y3ce4W8KRjirV7duY1?usp=sharing
+* PaddleOCRSharp 2.0.3
+### Tài nguyên cần thiết(yolov3.cf,yolov3_6000_LP.weights)
+* Dowload 2 file trong thư mục "backup" https://drive.google.com/drive/folders/1AOwlf1i7SldTr-y3ce4W8KRjirV7duY1?usp=sharing
 * Lưu tại thư mục ..\Vietnamese-License-Plate-Recognition\Vietnamese License Plate Recognition\bin\x64\Debug
 
 Lưu ý: Hiện tại vì là bản demo nên độ chính xác chưa cao nên chương trình còn một số hạn chế sau:
