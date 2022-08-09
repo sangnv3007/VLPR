@@ -1,4 +1,6 @@
-﻿using System;
+﻿using Emgu.CV;
+using Emgu.CV.Structure;
+using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
@@ -21,7 +23,8 @@ namespace Vietnamese_License_Plate_Recognition
             Application.Run(new Form1());
 
             //var extracter = new NumberPlateExtracter();
-            //string path = @"D:\Download Chorme\CarTGMT\CarTGMT\test10.jpg";
+            //string path = @"C:\Users\Admin\source\repos\ImageTest\bien-so-xe-ngoai-giao.jpg";
+            ////var img = new Image<Bgr, byte>(path);
             //string result = extracter.ProcessImage(path);
             //Console.WriteLine(result);
         }
