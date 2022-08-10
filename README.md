@@ -17,10 +17,6 @@ Hiện tại chương trình vẫn chưa hoàn thiện, thuật toán nhận d�
 * Emgu.CV.runtime.windows 4.5.5.4823
 * PaddleOCRSharp 2.0.3
 
-Lưu ý: Hiện tại vì là bản demo nên độ chính xác chưa cao nên chương trình còn một số hạn chế sau:
-- Nhận dạng đúng cho những biển số rõ ràng, dể nhìn
-- Chưa nhận diện tốt những biển quá mờ, điều kiện ánh sáng quá chói hoặc biển bị che.
-
 ### Hướng dẫn triển khai
 - Copy các dll sau trong thư mục `bin/Debug`(Hoặc tự cài trên Nuget Package) vào thư mục chạy dự án của bạn
 ```
@@ -35,3 +31,8 @@ Dowload 2 file trong thư mục [backup](https://drive.google.com/drive/folders/
   yolov3.cf
   yolov3_6000_LP.weights
 ```
+
+
+Lưu ý: Hiện tại vì là bản demo nên độ chính xác chưa cao nên chương trình còn một số hạn chế sau:
+- Nhận dạng đúng cho những biển số rõ ràng, dể nhìn
+- Chưa nhận diện tốt những biển quá mờ, điều kiện ánh sáng quá chói hoặc biển bị che.
