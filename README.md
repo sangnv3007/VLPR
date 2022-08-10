@@ -1,5 +1,5 @@
 # Vietnamese License Plate Recognition(Demo version)
-Hiện tại chương trình vẫn chưa hoàn thiện, thuật toán nhận dạng chưa hoàn hảo 100% chính xác với mọi loại biển số xe. Nên thời gian tới mình sẽ phát triển thêm và cập nhật sau. Do chương trình dài nên mình chỉ giới thiệu tính năng các bạn có thể clone về rồi từ từ tham khảo. Các bước thực hiện của chương trình như sau: 
+Hiện tại chương trình vẫn chưa hoàn thiện, thuật toán nhận dạng chưa chính xác với mọi loại biển số xe. Nên thời gian tới mình sẽ phát triển thêm và cập nhật sau. Do chương trình dài nên mình chỉ giới thiệu tính năng các bạn có thể clone về rồi từ từ tham khảo. Các bước thực hiện của chương trình như sau: 
 
 **1. Hình gốc**
 
