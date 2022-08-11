@@ -4,7 +4,6 @@ using Emgu.CV.Dnn;
 using Emgu.CV.Structure;
 using Emgu.CV.Util;
 using PaddleOCRSharp;
-using Python.Runtime;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -12,6 +11,7 @@ using System.Drawing;
 using System.IO;
 using System.Linq;
 using System.Text;
+using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using System.Windows.Forms;
 
@@ -23,10 +23,13 @@ namespace TD.VLPR
         private string PathWeights;
         //dynamic func;
         Net Model = null;
-
+        OCRModelConfig config = null;
+        OCRParameter oCRParameter = new OCRParameter();
+        OCRResult ocrResult = new OCRResult();
+        PaddleOCREngine engine = null;
         public NumberPlateExtracter(
             string pathConfig = "yolov3.cfg",
-            string pathWeights = "yolov3_6000_LP.weights")
+            string pathWeights = "yolov3_10000_LP.weights")
         {
             PathConfig = pathConfig;
             PathWeights = pathWeights;
@@ -54,9 +57,10 @@ namespace TD.VLPR
             return list;
         }
 
-        string result = string.Empty;
-        //Hàm trích xuất thông tin biển số xe từ đường dẫn ảnh
-        public string ProcessImage(Mat imgInput)
+        string textPlates = string.Empty;
+        ResultLP result = new ResultLP();
+        //Hàm trích xuất thông tin biển số xe từ đường dẫn ảnh trả về obj
+        public ResultLP ProcessImage(Mat imgInput)
         {            
             try
             {
@@ -106,13 +110,8 @@ namespace TD.VLPR
 
                 }
                 CvInvoke.Imwrite("imgtest.jpg", imageCrop);
-                OCRModelConfig config = null;
-                OCRParameter oCRParameter = new OCRParameter();
-                OCRResult ocrResult = new OCRResult();
-                PaddleOCREngine engine = new PaddleOCREngine(config, oCRParameter);
-                {
-                    ocrResult = engine.DetectText(imageCrop.ToBitmap());
-                }
+
+                ocrResult = engine.DetectText(imageCrop.ToBitmap());
                 List<string> arrayresult = new List<string>();
                 if (ocrResult != null)
                 {
@@ -120,9 +119,12 @@ namespace TD.VLPR
                     {
                         arrayresult.Add(ocrResult.TextBlocks[i].Text);
                     }
-                    result = string.Join("-", arrayresult).Replace(".", "");
-                    //Console.WriteLine(result);
-                }               
+
+                    textPlates = string.Join("-", arrayresult);
+                    textPlates = Regex.Replace(textPlates, @"[^0-9a-zA-Z\-]", "");
+                    ResultLP obj = new ResultLP();
+                    result = obj.Result(textPlates, isValidPlatesNumber(textPlates));
+                }
             }
             catch (Exception ex)
             {
@@ -130,7 +132,7 @@ namespace TD.VLPR
             }
             return result;
         }
-        public string ProcessImage(string path)
+        public ResultLP ProcessImage(string path)
         {
             try
             {
@@ -178,13 +180,8 @@ namespace TD.VLPR
 
                 }
                 CvInvoke.Imwrite("imgtest.jpg", imageCrop);
-                OCRModelConfig config = null;
-                OCRParameter oCRParameter = new OCRParameter();
-                OCRResult ocrResult = new OCRResult();
-                PaddleOCREngine engine = new PaddleOCREngine(config, oCRParameter);
-                {
-                    ocrResult = engine.DetectText(imageCrop.ToBitmap());
-                }
+
+                ocrResult = engine.DetectText(imageCrop.ToBitmap());
                 List<string> arrayresult = new List<string>();
                 if (ocrResult != null)
                 {
@@ -192,10 +189,12 @@ namespace TD.VLPR
                     {
                         arrayresult.Add(ocrResult.TextBlocks[i].Text);
                     }
-                    result = string.Join("-", arrayresult).Replace(".", "");
-                    //Console.WriteLine(result);
-                }
 
+                    textPlates = string.Join("-", arrayresult);
+                    textPlates = Regex.Replace(textPlates, @"[^0-9a-zA-Z\-]", "");
+                    ResultLP obj = new ResultLP();
+                    result = obj.Result(textPlates, isValidPlatesNumber(textPlates));
+                }
             }
             catch (Exception ex)
             {
@@ -203,7 +202,7 @@ namespace TD.VLPR
             }
             return result;
         }
-        public string ProcessImage(Bitmap bitmap)
+        public ResultLP ProcessImage(Bitmap bitmap)
         {
             try
             {
@@ -252,13 +251,8 @@ namespace TD.VLPR
 
                 }
                 CvInvoke.Imwrite("imgtest.jpg", imageCrop);
-                OCRModelConfig config = null;
-                OCRParameter oCRParameter = new OCRParameter();
-                OCRResult ocrResult = new OCRResult();
-                PaddleOCREngine engine = new PaddleOCREngine(config, oCRParameter);
-                {
-                    ocrResult = engine.DetectText(imageCrop.ToBitmap());
-                }
+
+                ocrResult = engine.DetectText(imageCrop.ToBitmap());
                 List<string> arrayresult = new List<string>();
                 if (ocrResult != null)
                 {
@@ -266,8 +260,11 @@ namespace TD.VLPR
                     {
                         arrayresult.Add(ocrResult.TextBlocks[i].Text);
                     }
-                    result = string.Join("-", arrayresult).Replace(".", "");
-                    //Console.WriteLine(result);
+
+                    textPlates = string.Join("-", arrayresult);
+                    textPlates = Regex.Replace(textPlates, @"[^0-9a-zA-Z\-]", "");
+                    ResultLP obj = new ResultLP();
+                    result = obj.Result(textPlates, isValidPlatesNumber(textPlates));
                 }
 
             }
@@ -281,6 +278,37 @@ namespace TD.VLPR
         {
             //Load model detect LP
             Model = DnnInvoke.ReadNetFromDarknet(PathConfig, PathWeights);
+            engine = new PaddleOCREngine(config, oCRParameter);
+        }
+        public static bool isValidPlatesNumber(string inputPlatesNumber)
+        {
+            string strRegex = @"(^[0-9]{2}-[A-Z0-9]{2,3}-[0-9]{4,5}$)|(^[A-Z]{0,4}-[0-9]{2}-[0-9]{2}$)|(^[A-Z0-9]{2}-[A-Z0-9]{2,3}-[A-Z0-9]{2,3}-[0-9]{2}$)|(^[0-9]{2}[A-Z]{1,2}-[0-9]{4,5}$)|(^[A-z0-9]{7,8}$)";
+            Regex re = new Regex(strRegex);
+            if (re.IsMatch(inputPlatesNumber))
+                return (true);
+            else
+                return (false);
+        }
+    }
+    public class ResultLP
+    {
+        string LP, statusLP = String.Empty;
+        // Create a class result for ResultLP.
+        public ResultLP Result(string LP, bool statusLP)
+        {
+            ResultLP result = new ResultLP();
+            result.LP = LP;
+            if (statusLP) result.statusLP = "Bien so xe dung dinh dang";
+            else result.statusLP = "Khong dung dinh dang bien so xe. Kiem tra lai !";
+            return result;
+        }
+        public string textplate()
+        {
+            return LP;
+        }
+        public string status()
+        {
+            return statusLP;
         }
     }
 }

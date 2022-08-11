@@ -14,7 +14,6 @@ using Emgu.CV.Structure;
 using Emgu.CV.CvEnum;
 using System.Drawing.Imaging;
 using System.IO;
-using Python.Runtime;
 using System.Diagnostics;
 using PaddleOCRSharp;
 using System.Text.RegularExpressions;
@@ -25,17 +24,21 @@ namespace Vietnamese_License_Plate_Recognition
     {
         Net Model = null;
         string PathConfig = "yolov3.cfg";
-        string PathWeights = "yolov3_6000_LP.weights";
+        string PathWeights = "yolov3_10000_LP.weights";
+        OCRModelConfig config = null;
+        OCRParameter oCRParameter = new OCRParameter();
+        OCRResult ocrResult = new OCRResult();
+        PaddleOCREngine engine = null;
         public Form1()
         {
             InitializeComponent();
         }
         private void button1_Click(object sender, EventArgs e)
-        {          
+        {
             // open file dialog   
             OpenFileDialog open = new OpenFileDialog();
             // image filters  
-            open.Filter = "Image Files(*.jpg; *.jpeg; *.gif; *.bmp)|*.jpg; *.jpeg; *.gif; *.bmp";
+            open.Filter = "Image Files(*.jpg; *.jpeg; *.gif; *.bmp; *.png; *.webp)|*.jpg; *.jpeg; *.gif; *.bmp; *.png; *.webp)";
             if (open.ShowDialog() == DialogResult.OK)
             {
                 using (Image sourceImg = Image.FromFile(open.FileName))
@@ -48,7 +51,18 @@ namespace Vietnamese_License_Plate_Recognition
                     pictureBox6.InitialImage = null;
                     pictureBox6.Image = clonedImg;
                 }
+                //  Khai báo đối tượng Stopwatch
+                Stopwatch swObj = new Stopwatch();
+
+                //Thời gian bắt đầu
+                swObj.Start();
+
                 ProcessImage(open.FileName);
+
+                //Thời gian kết thúc
+                swObj.Stop();
+                //Tổng thời gian thực hiện               
+                label5.Text = Math.Round(swObj.Elapsed.TotalSeconds, 2).ToString() + " giây";
             }
         }
         public static List<float[]> ArrayTo2DList(Array array)
@@ -111,22 +125,16 @@ namespace Vietnamese_License_Plate_Recognition
 
                             var x = (int)(center_x - (width / 2));
                             var y = (int)(center_y - (height / 2));
-                            Rectangle plate = new Rectangle(x-5, y-5, width+10, height+10);
+                            Rectangle plate = new Rectangle(x - 5, y - 5, width + 10, height + 10);
                             imageCrop = img.Clone();
                             imageCrop.ROI = plate;
-                            imageCrop = imageCrop.Resize(500, 500, Inter.Cubic, preserveScale: true);                   
+                            imageCrop = imageCrop.Resize(500, 500, Inter.Cubic, preserveScale: true);
                         }
                     }
                 }
                 CvInvoke.Imwrite("imgcrop.jpg", imageCrop);
                 pictureBox3.Image = imageCrop.ToBitmap();
-                OCRModelConfig config = null;
-                OCRParameter oCRParameter = new OCRParameter();
-                OCRResult ocrResult = new OCRResult();
-                PaddleOCREngine engine = new PaddleOCREngine(config, oCRParameter);
-                {
-                    ocrResult = engine.DetectText(imageCrop.ToBitmap());
-                }
+                ocrResult = engine.DetectText(imageCrop.ToBitmap());
                 List<string> arrayresult = new List<string>();
                 if (ocrResult != null)
                 {
@@ -134,15 +142,18 @@ namespace Vietnamese_License_Plate_Recognition
                     {
                         arrayresult.Add(ocrResult.TextBlocks[i].Text);
                     }
-                    textPlates = string.Join("-", arrayresult).Replace(".", "").Replace(")", "").Replace("(", "");
-                    Console.WriteLine(textPlates);
-                    textBox1.Text = textPlates;                   
+                    textPlates = string.Join("-", arrayresult);
+                    textPlates = Regex.Replace(textPlates, @"[^0-9a-zA-Z\-]", "");
+                    textBox1.Text = textPlates;
+                    ResultLPForm obj = new ResultLPForm();
+                    ResultLPForm resultobj = obj.Result(textPlates, isValidPlatesNumber(textPlates));                   
+                    label2.Text = resultobj.textplate() +" "+ resultobj.status();
                 }
 
             }
             catch (Exception ex)
             {
-                MessageBox.Show(ex.Message);                
+                MessageBox.Show(ex.Message);
             }
         }
 
@@ -260,7 +271,7 @@ namespace Vietnamese_License_Plate_Recognition
         public void ArrangePlates(List<Rectangle> listRect, bool isTwoPlates, List<Rectangle> up, List<Rectangle> dow)
         {
             if (isTwoPlates)
-            {              
+            {
                 int up_y = 0, dow_y = 0;
                 bool flag_up = false;
                 if (listRect == null) return;
@@ -327,7 +338,7 @@ namespace Vietnamese_License_Plate_Recognition
                 }
             }
             else
-            {               
+            {
                 for (int i = 0; i < listRect.Count; i++)
                 {
                     for (int j = i; j < listRect.Count; j++)
@@ -364,10 +375,10 @@ namespace Vietnamese_License_Plate_Recognition
                 Y += listRect[i].Y;
                 Height += listRect[i].Height;
             }
-            Bien.X = xmin-10;
-            Bien.Y = Y / listRect.Count-10;
-            Bien.Width = xmax - xmin +20;
-            Bien.Height = Height / listRect.Count +20;
+            Bien.X = xmin - 10;
+            Bien.Y = Y / listRect.Count - 10;
+            Bien.Width = xmax - xmin + 20;
+            Bien.Height = Height / listRect.Count + 20;
             chenhlech = ymax - ymin;
             return Bien;
         }
@@ -386,29 +397,46 @@ namespace Vietnamese_License_Plate_Recognition
         {
             LoadModelRecognize();
         }
-
+        // method containing the regex
+        public static bool isValidPlatesNumber(string inputPlatesNumber)
+        {
+            string strRegex = @"(^[0-9]{2}-[A-Z0-9]{2,3}-[0-9]{4,5}$)|(^[A-Z]{0,4}-[0-9]{2}-[0-9]{2}$)|(^[A-Z0-9]{2}-[A-Z0-9]{2,3}-[A-Z0-9]{2,3}-[0-9]{2}$)|(^[0-9]{2}[A-Z]{1,2}-[0-9]{4,5}$)|(^[A-z0-9]{7,8}$)";
+            Regex re = new Regex(strRegex);
+            if (re.IsMatch(inputPlatesNumber))
+                return (true);
+            else
+                return (false);
+        }
         public void LoadModelRecognize()
         {
             Model = DnnInvoke.ReadNetFromDarknet(PathConfig, PathWeights);//Load model detect LP
-            //Executing Python Code Script
-            //using (Py.GIL())
-            //{
-            //    using (PyScope scope = Py.CreateScope())
-            //    {
-            //        Console.WriteLine(Application.StartupPath);
-            //        string code = File.ReadAllText("reconigtion_character.py");
-
-            //        var scriptCompiled = PythonEngine.Compile(code);
-
-            //        scope.Execute(scriptCompiled);
-            //        func = scope.Get("inference");
-            //    }
-            //}
+            engine = new PaddleOCREngine(config, oCRParameter);
         }
 
         private void pictureBox6_Click(object sender, EventArgs e)
         {
 
+        }
+    }
+    public class ResultLPForm
+    {
+        string LP, statusLP = String.Empty;
+        // Create a class result for ResultLP.
+        public ResultLPForm Result(string LP, bool statusLP)
+        {
+            ResultLPForm result = new ResultLPForm();
+            result.LP = LP;
+            if (statusLP) result.statusLP = "Biển số xe đúng định dạng.";
+            else result.statusLP = "Không đúng định dạng biển số xe. Kiểm tra lại !";
+            return result;
+        }
+        public string textplate()
+        {
+            return LP;
+        }
+        public string status()
+        {
+            return statusLP;
         }
     }
 }

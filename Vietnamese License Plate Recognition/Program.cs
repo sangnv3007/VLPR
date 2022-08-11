@@ -18,15 +18,18 @@ namespace Vietnamese_License_Plate_Recognition
         [STAThread]
         static void Main()
         {
-            Application.EnableVisualStyles();
-            Application.SetCompatibleTextRenderingDefault(false);
-            Application.Run(new Form1());
+            //Application.EnableVisualStyles();
+            //Application.SetCompatibleTextRenderingDefault(false);
+            //Application.Run(new Form1());
 
-            //var extracter = new NumberPlateExtracter();
-            //string path = @"C:\Users\Admin\source\repos\ImageTest\bien-so-xe-ngoai-giao.jpg";
-            ////var img = new Image<Bgr, byte>(path);
-            //string result = extracter.ProcessImage(path);
-            //Console.WriteLine(result);
+            var extracter = new NumberPlateExtracter();
+            string path = @"D:\Download Chorme\ImageTest\xe-ngoai-giao-1_bezk.jpg";
+            //var img = new Image<Bgr, byte>(path);
+            ResultLP resultobj = extracter.ProcessImage(path);
+            string textplate = resultobj.textplate();
+            string status = resultobj.status();
+            Console.WriteLine("TextPlate: {0}",textplate);
+            Console.WriteLine("Status: {0}", status);
         }
     }
 }
