@@ -23,13 +23,11 @@ namespace Vietnamese_License_Plate_Recognition
             //Application.Run(new Form1());
 
             var extracter = new NumberPlateExtracter();
-            string path = @"D:\Download Chorme\ImageTest\xe-ngoai-giao-1_bezk.jpg";
+            string path = @"D:\Download Chorme\ImageTest\359d991ab27ba358cb9e213177b34d1d.jpg";
             //var img = new Image<Bgr, byte>(path);
             ResultLP resultobj = extracter.ProcessImage(path);
-            string textplate = resultobj.textplate();
-            string status = resultobj.status();
-            Console.WriteLine("TextPlate: {0}",textplate);
-            Console.WriteLine("Status: {0}", status);
+            Console.WriteLine("TextPlate: {0}", resultobj.LP);
+            Console.WriteLine("Status: {0}", resultobj.statusLP);
         }
     }
 }

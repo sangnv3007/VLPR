@@ -29,7 +29,7 @@ namespace TD.VLPR
         PaddleOCREngine engine = null;
         public NumberPlateExtracter(
             string pathConfig = "yolov3.cfg",
-            string pathWeights = "yolov3_10000_LP.weights")
+            string pathWeights = "yolov3_Test_LP.weights")
         {
             PathConfig = pathConfig;
             PathWeights = pathWeights;
@@ -122,7 +122,7 @@ namespace TD.VLPR
 
                     textPlates = string.Join("-", arrayresult);
                     textPlates = Regex.Replace(textPlates, @"[^0-9a-zA-Z\-]", "");
-                    ResultLP obj = new ResultLP();
+                    LPReturn obj = new LPReturn();
                     result = obj.Result(textPlates, isValidPlatesNumber(textPlates));
                 }
             }
@@ -192,7 +192,7 @@ namespace TD.VLPR
 
                     textPlates = string.Join("-", arrayresult);
                     textPlates = Regex.Replace(textPlates, @"[^0-9a-zA-Z\-]", "");
-                    ResultLP obj = new ResultLP();
+                    LPReturn obj = new LPReturn();
                     result = obj.Result(textPlates, isValidPlatesNumber(textPlates));
                 }
             }
@@ -263,7 +263,7 @@ namespace TD.VLPR
 
                     textPlates = string.Join("-", arrayresult);
                     textPlates = Regex.Replace(textPlates, @"[^0-9a-zA-Z\-]", "");
-                    ResultLP obj = new ResultLP();
+                    LPReturn obj = new LPReturn();
                     result = obj.Result(textPlates, isValidPlatesNumber(textPlates));
                 }
 
@@ -282,7 +282,7 @@ namespace TD.VLPR
         }
         public static bool isValidPlatesNumber(string inputPlatesNumber)
         {
-            string strRegex = @"(^[0-9]{2}-[A-Z0-9]{2,3}-[0-9]{4,5}$)|(^[A-Z]{0,4}-[0-9]{2}-[0-9]{2}$)|(^[A-Z0-9]{2}-[A-Z0-9]{2,3}-[A-Z0-9]{2,3}-[0-9]{2}$)|(^[0-9]{2}[A-Z]{1,2}-[0-9]{4,5}$)|(^[A-z0-9]{7,8}$)";
+            string strRegex = @"(^[0-9]{2}-[A-Z0-9]{2,3}-[0-9]{4,5}$)|(^[A-Z]{0,4}-[0-9]{2}-[0-9]{2}$)|(^[A-Z0-9]{2}-[A-Z0-9]{2,3}-[A-Z0-9]{2,3}-[0-9]{2}$)|(^[0-9]{2}[A-Z]{1,2}-[0-9]{4,5}$)|(^[A-z0-9]{7,9}$)";
             Regex re = new Regex(strRegex);
             if (re.IsMatch(inputPlatesNumber))
                 return (true);
@@ -290,25 +290,30 @@ namespace TD.VLPR
                 return (false);
         }
     }
+
     public class ResultLP
     {
-        string LP, statusLP = String.Empty;
+        /// <summary>
+        /// Thông tin biển số xe
+        /// </summary>
+        public string LP { get; set; }
+        /// <summary>
+        /// 0 : Thành công
+        /// 1 : Không nhận diện được hoặc nhận diện sai
+        /// </summary>
+        public int statusLP { get; set; }
+    }
+
+    public class LPReturn
+    {
         // Create a class result for ResultLP.
         public ResultLP Result(string LP, bool statusLP)
         {
             ResultLP result = new ResultLP();
             result.LP = LP;
-            if (statusLP) result.statusLP = "Bien so xe dung dinh dang";
-            else result.statusLP = "Khong dung dinh dang bien so xe. Kiem tra lai !";
+            if (statusLP) result.statusLP = 0;
+            else result.statusLP = 1;
             return result;
-        }
-        public string textplate()
-        {
-            return LP;
-        }
-        public string status()
-        {
-            return statusLP;
         }
     }
 }

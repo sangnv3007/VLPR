@@ -24,7 +24,7 @@ namespace Vietnamese_License_Plate_Recognition
     {
         Net Model = null;
         string PathConfig = "yolov3.cfg";
-        string PathWeights = "yolov3_10000_LP.weights";
+        string PathWeights = "yolov3_12000_LP.weights";
         OCRModelConfig config = null;
         OCRParameter oCRParameter = new OCRParameter();
         OCRResult ocrResult = new OCRResult();
@@ -145,9 +145,9 @@ namespace Vietnamese_License_Plate_Recognition
                     textPlates = string.Join("-", arrayresult);
                     textPlates = Regex.Replace(textPlates, @"[^0-9a-zA-Z\-]", "");
                     textBox1.Text = textPlates;
-                    ResultLPForm obj = new ResultLPForm();
+                    LPReturnForm obj = new LPReturnForm();
                     ResultLPForm resultobj = obj.Result(textPlates, isValidPlatesNumber(textPlates));                   
-                    label2.Text = resultobj.textplate() +" "+ resultobj.status();
+                    label2.Text = "Biển số: "+ resultobj.LP +", status: "+ resultobj.statusLP;
                 }
 
             }
@@ -400,7 +400,7 @@ namespace Vietnamese_License_Plate_Recognition
         // method containing the regex
         public static bool isValidPlatesNumber(string inputPlatesNumber)
         {
-            string strRegex = @"(^[0-9]{2}-[A-Z0-9]{2,3}-[0-9]{4,5}$)|(^[A-Z]{0,4}-[0-9]{2}-[0-9]{2}$)|(^[A-Z0-9]{2}-[A-Z0-9]{2,3}-[A-Z0-9]{2,3}-[0-9]{2}$)|(^[0-9]{2}[A-Z]{1,2}-[0-9]{4,5}$)|(^[A-z0-9]{7,8}$)";
+            string strRegex = @"(^[0-9]{2}-[A-Z0-9]{2,3}-[0-9]{4,5}$)|(^[A-Z]{0,4}-[0-9]{2}-[0-9]{2}$)|(^[A-Z0-9]{2}-[A-Z0-9]{2,3}-[A-Z0-9]{2,3}-[0-9]{2}$)|(^[0-9]{2}[A-Z]{1,2}-[0-9]{4,5}$)|(^[A-z0-9]{7,9}$)";
             Regex re = new Regex(strRegex);
             if (re.IsMatch(inputPlatesNumber))
                 return (true);
@@ -420,23 +420,27 @@ namespace Vietnamese_License_Plate_Recognition
     }
     public class ResultLPForm
     {
-        string LP, statusLP = String.Empty;
+        /// <summary>
+        /// Thông tin biển số xe
+        /// </summary>
+        public string LP { get; set; }
+        /// <summary>
+        /// 0 : Thành công
+        /// 1 : Không nhận diện được hoặc nhận diện sai
+        /// </summary>
+        public int statusLP { get; set; }
+    }
+
+    public class LPReturnForm
+    {
         // Create a class result for ResultLP.
         public ResultLPForm Result(string LP, bool statusLP)
         {
             ResultLPForm result = new ResultLPForm();
             result.LP = LP;
-            if (statusLP) result.statusLP = "Biển số xe đúng định dạng.";
-            else result.statusLP = "Không đúng định dạng biển số xe. Kiểm tra lại !";
+            if (statusLP) result.statusLP = 0;
+            else result.statusLP = 1;
             return result;
-        }
-        public string textplate()
-        {
-            return LP;
-        }
-        public string status()
-        {
-            return statusLP;
         }
     }
 }
