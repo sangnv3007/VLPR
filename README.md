@@ -29,7 +29,7 @@ Hiện tại chương trình vẫn chưa hoàn thiện, thuật toán nhận d�
 Dowload 2 file trong thư mục [backup](https://drive.google.com/drive/folders/1AOwlf1i7SldTr-y3ce4W8KRjirV7duY1?usp=sharing) và copy vào thư mục chạy dự án
 ```
   yolov3.cf
-  yolov3_6000_LP.weights
+  yolov3_Test_LP.weights
 ```
 
 
