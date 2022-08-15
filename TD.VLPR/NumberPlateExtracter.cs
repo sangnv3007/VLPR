@@ -101,29 +101,38 @@ namespace TD.VLPR
 
                             var x = (int)(center_x - (width / 2));
                             var y = (int)(center_y - (height / 2));
-                            Rectangle plate = new Rectangle(x-5, y-5, width+10, height+10);
+                            Rectangle plate = new Rectangle(x - 5, y - 5, width + 10, height + 10);
                             imageCrop = img.Clone();
                             imageCrop.ROI = plate;
-                            imageCrop = imageCrop.Resize(500, 500, Inter.Cubic, preserveScale: true);                           
-                        }                     
+                        }
                     }
 
                 }
-                CvInvoke.Imwrite("imgtest.jpg", imageCrop);
-
-                ocrResult = engine.DetectText(imageCrop.ToBitmap());
-                List<string> arrayresult = new List<string>();
-                if (ocrResult != null)
+                if (imageCrop.Height != imgDefaultSize && imageCrop.Width != imgDefaultSize)
                 {
-                    for (int i = 0; i < ocrResult.TextBlocks.Count; i++)
+                    CvInvoke.Imwrite("imgcrop.jpg", imageCrop);
+                    ocrResult = engine.DetectText(imageCrop.ToBitmap());
+                    List<string> arrayresult = new List<string>();
+                    if (ocrResult != null)
                     {
-                        arrayresult.Add(ocrResult.TextBlocks[i].Text);
+                        for (int i = 0; i < ocrResult.TextBlocks.Count; i++)
+                        {
+                            string TextBlocksPlate = ocrResult.TextBlocks[i].Text;
+                            TextBlocksPlate = Regex.Replace(TextBlocksPlate, @"[^0-9A-Z\-]", "");
+                            if (isValidPlatesNumber(TextBlocksPlate))
+                            {
+                                arrayresult.Add(TextBlocksPlate);
+                            }
+                        }
+                        textPlates = string.Join("-", arrayresult);
+                        LPReturn obj = new LPReturn();
+                        result = obj.Result(textPlates, true);
                     }
-
-                    textPlates = string.Join("-", arrayresult);
-                    textPlates = Regex.Replace(textPlates, @"[^0-9A-Z\-]", "");
+                }
+                else
+                {
                     LPReturn obj = new LPReturn();
-                    result = obj.Result(textPlates, isValidPlatesNumber(textPlates));
+                    result = obj.Result("No license plate found", false);
                 }
             }
             catch (Exception ex)
@@ -174,26 +183,35 @@ namespace TD.VLPR
                             Rectangle plate = new Rectangle(x - 5, y - 5, width + 10, height + 10);
                             imageCrop = img.Clone();
                             imageCrop.ROI = plate;
-                            imageCrop = imageCrop.Resize(500, 500, Inter.Cubic, preserveScale: true);
                         }
                     }
 
                 }
-                CvInvoke.Imwrite("imgtest.jpg", imageCrop);
-
-                ocrResult = engine.DetectText(imageCrop.ToBitmap());
-                List<string> arrayresult = new List<string>();
-                if (ocrResult != null)
+                if (imageCrop.Height != imgDefaultSize && imageCrop.Width != imgDefaultSize)
                 {
-                    for (int i = 0; i < ocrResult.TextBlocks.Count; i++)
+                    CvInvoke.Imwrite("imgcrop.jpg", imageCrop);
+                    ocrResult = engine.DetectText(imageCrop.ToBitmap());
+                    List<string> arrayresult = new List<string>();
+                    if (ocrResult != null)
                     {
-                        arrayresult.Add(ocrResult.TextBlocks[i].Text);
+                        for (int i = 0; i < ocrResult.TextBlocks.Count; i++)
+                        {
+                            string TextBlocksPlate = ocrResult.TextBlocks[i].Text;
+                            TextBlocksPlate = Regex.Replace(TextBlocksPlate, @"[^0-9A-Z\-]", "");
+                            if (isValidPlatesNumber(TextBlocksPlate))
+                            {
+                                arrayresult.Add(TextBlocksPlate);
+                            }
+                        }
+                        textPlates = string.Join("-", arrayresult);
+                        LPReturn obj = new LPReturn();
+                        result = obj.Result(textPlates, true);
                     }
-
-                    textPlates = string.Join("-", arrayresult);
-                    textPlates = Regex.Replace(textPlates, @"[^0-9A-Z\-]", "");
+                }
+                else
+                {
                     LPReturn obj = new LPReturn();
-                    result = obj.Result(textPlates, isValidPlatesNumber(textPlates));
+                    result = obj.Result("No license plate found", false);
                 }
             }
             catch (Exception ex)
@@ -210,7 +228,7 @@ namespace TD.VLPR
         }
         public static bool isValidPlatesNumber(string inputPlatesNumber)
         {
-            string strRegex = @"(^[0-9]{2}-[A-Z0-9]{2,3}-[0-9]{4,5}$)|(^[A-Z]{0,4}-[0-9]{2}-[0-9]{2}$)|(^[A-Z0-9]{2}-[A-Z0-9]{2,3}-[A-Z0-9]{2,3}-[0-9]{2}$)|(^[0-9]{2}[0-9A-Z]{1,2}-[0-9]{4,5}$)|(^[A-Z0-9]{7,9}$)";
+            string strRegex = @"(^[A-Z0-9]{2}-?[A-Z0-9]{0,3}$)|(^[0-9]{4,5}$)|(^[0-9]{2}[A-Z]{1,2}-?[0-9]{4,5}$)|(^[A-Z]{2}-?[0-9]{2}-?[0-9]{2}$)|(^[A-Z0-9]{2}-?[A-Z0-9]{2,3}-?[A-Z0-9]{2,3}-?[0-9]{2}$)";
             Regex re = new Regex(strRegex);
             if (re.IsMatch(inputPlatesNumber))
                 return (true);

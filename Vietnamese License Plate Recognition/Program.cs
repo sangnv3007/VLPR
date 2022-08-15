@@ -18,16 +18,24 @@ namespace Vietnamese_License_Plate_Recognition
         [STAThread]
         static void Main()
         {
-            //Application.EnableVisualStyles();
-            //Application.SetCompatibleTextRenderingDefault(false);
-            //Application.Run(new Form1());
+            ///<summary>
+            ///Run Apllication Form
+            ///</summary>
+            ///
+            Application.EnableVisualStyles();
+            Application.SetCompatibleTextRenderingDefault(false);
+            Application.Run(new Form1());
 
-            var extracter = new NumberPlateExtracter();
-            string path = @"D:\Download Chorme\GreenParking\GreenParking\taxi.jpg";
-            var img = new Image<Bgr, byte>(path);
-            ResultLP resultobj = extracter.ProcessImage(img.Mat);
-            Console.WriteLine("TextPlate: {0}", resultobj.LP);
-            Console.WriteLine("Status: {0}", resultobj.statusLP);
+            ///<summary>
+            ///Run Console Command
+            ///</summary>
+
+            //var extracter = new NumberPlateExtracter();
+            //string path = @"C:\Users\Admin\Pictures\70fbd6d9dbfd16a34fec.jpg";
+            ////var img = new Image<Bgr, byte>(path);
+            //ResultLP resultobj = extracter.ProcessImage(path);
+            //Console.WriteLine("TextPlate: {0}", resultobj.LP);
+            //Console.WriteLine("Status: {0}", resultobj.statusLP);
         }
     }
 }

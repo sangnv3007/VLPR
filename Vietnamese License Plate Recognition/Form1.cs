@@ -125,29 +125,41 @@ namespace Vietnamese_License_Plate_Recognition
 
                             var x = (int)(center_x - (width / 2));
                             var y = (int)(center_y - (height / 2));
-                            Rectangle plate = new Rectangle(x, y, width, height);
+                            Rectangle plate = new Rectangle(x-5, y-5, width+10, height+10);
                             imageCrop = img.Clone();
                             imageCrop.ROI = plate;
-                            imageCrop = imageCrop.Resize(500, 500, Inter.Cubic, preserveScale: true);
                         }
                     }
                 }
-                CvInvoke.Imwrite("imgcrop.jpg", imageCrop);
-                pictureBox3.Image = imageCrop.ToBitmap();
-                ocrResult = engine.DetectText(imageCrop.ToBitmap());
-                List<string> arrayresult = new List<string>();
-                if (ocrResult != null)
+                if(imageCrop.Height != imgDefaultSize && imageCrop.Width != imgDefaultSize)
                 {
-                    for (int i = 0; i < ocrResult.TextBlocks.Count; i++)
+                    CvInvoke.Imwrite("imgcrop.jpg", imageCrop);
+                    pictureBox3.Image = imageCrop.ToBitmap();
+                    ocrResult = engine.DetectText(imageCrop.ToBitmap());
+                    List<string> arrayresult = new List<string>();
+                    if (ocrResult != null)
                     {
-                        arrayresult.Add(ocrResult.TextBlocks[i].Text);
+                        for (int i = 0; i < ocrResult.TextBlocks.Count; i++)
+                        {
+                            string TextBlocksPlate = ocrResult.TextBlocks[i].Text;
+                            TextBlocksPlate = Regex.Replace(TextBlocksPlate, @"[^0-9A-Z\-]", "");
+                            if (isValidPlatesNumberForm(TextBlocksPlate))
+                            {
+                                arrayresult.Add(TextBlocksPlate);
+                            }                               
+                        }
+                        textPlates = string.Join("-", arrayresult);
+                        textBox1.Text = textPlates;
+                        LPReturnForm obj = new LPReturnForm();
+                        ResultLPForm resultobj = obj.Result(textPlates, true);
+                        label2.Text = "Biển số: " + resultobj.LP + ", status: " + resultobj.statusLP;
                     }
-                    textPlates = string.Join("-", arrayresult);                   
-                    textPlates = Regex.Replace(textPlates, @"[^0-9A-Z\-]", "");
-                    textBox1.Text = textPlates;
+                }
+                else
+                {
                     LPReturnForm obj = new LPReturnForm();
-                    ResultLPForm resultobj = obj.Result(textPlates, isValidPlatesNumber(textPlates));                   
-                    label2.Text = "Biển số: "+ resultobj.LP +", status: "+ resultobj.statusLP;
+                    ResultLPForm resultobj = obj.Result("No license plate found", false);
+                    label2.Text = "Thất bại ! Không nhận diện được hoặc nhận diện sai.";
                 }
 
             }
@@ -401,6 +413,15 @@ namespace Vietnamese_License_Plate_Recognition
         public static bool isValidPlatesNumber(string inputPlatesNumber)
         {
             string strRegex = @"(^[0-9]{2}-[A-Z0-9]{2,3}-[0-9]{4,5}$)|(^[A-Z]{0,4}-[0-9]{2}-[0-9]{2}$)|(^[A-Z0-9]{2}-[A-Z0-9]{2,3}-[A-Z0-9]{2,3}-[0-9]{2}$)|(^[0-9]{2}[0-9A-Z]{1,2}-[0-9]{4,5}$)|(^[A-Z0-9]{7,9}$)";
+            Regex re = new Regex(strRegex);
+            if (re.IsMatch(inputPlatesNumber))
+                return (true);
+            else
+                return (false);
+        }
+        public static bool isValidPlatesNumberForm(string inputPlatesNumber)
+        {
+            string strRegex = @"(^[A-Z0-9]{2}-?[A-Z0-9]{0,3}$)|(^[0-9]{4,5}$)|(^[0-9]{2}[A-Z]{1,2}-?[0-9]{4,5}$)|(^[A-Z]{2}-?[0-9]{2}-?[0-9]{2}$)|(^[A-Z0-9]{2}-?[A-Z0-9]{2,3}-?[A-Z0-9]{2,3}-?[0-9]{2}$)";
             Regex re = new Regex(strRegex);
             if (re.IsMatch(inputPlatesNumber))
                 return (true);
