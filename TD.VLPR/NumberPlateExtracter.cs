@@ -29,7 +29,7 @@ namespace TD.VLPR
         PaddleOCREngine engine = null;
         public NumberPlateExtracter(
             string pathConfig = "yolov3.cfg",
-            string pathWeights = "yolov3_Test_LP.weights")
+            string pathWeights = "yolov3_Final.weights")
         {
             PathConfig = pathConfig;
             PathWeights = pathWeights;
@@ -121,7 +121,7 @@ namespace TD.VLPR
                     }
 
                     textPlates = string.Join("-", arrayresult);
-                    textPlates = Regex.Replace(textPlates, @"[^0-9a-zA-Z\-]", "");
+                    textPlates = Regex.Replace(textPlates, @"[^0-9A-Z\-]", "");
                     LPReturn obj = new LPReturn();
                     result = obj.Result(textPlates, isValidPlatesNumber(textPlates));
                 }
@@ -191,82 +191,10 @@ namespace TD.VLPR
                     }
 
                     textPlates = string.Join("-", arrayresult);
-                    textPlates = Regex.Replace(textPlates, @"[^0-9a-zA-Z\-]", "");
+                    textPlates = Regex.Replace(textPlates, @"[^0-9A-Z\-]", "");
                     LPReturn obj = new LPReturn();
                     result = obj.Result(textPlates, isValidPlatesNumber(textPlates));
                 }
-            }
-            catch (Exception ex)
-            {
-                Console.WriteLine(ex.Message);
-            }
-            return result;
-        }
-        public ResultLP ProcessImage(Bitmap bitmap)
-        {
-            try
-            {
-                float confThreshold = 0.8f;
-                int imgDefaultSize = 416;
-                Image<Bgr, Byte> src = bitmap.ToImage<Bgr, byte>();
-                //Detect biển số xe
-                var img = src
-                      .Resize(imgDefaultSize, imgDefaultSize, Inter.Cubic);
-                var input = DnnInvoke.BlobFromImage(img, 1 / 255.0, swapRB: true);
-                Model.SetInput(input);
-                Model.SetPreferableBackend(Emgu.CV.Dnn.Backend.OpenCV);
-                Model.SetPreferableTarget(Target.Cpu);
-
-                VectorOfMat vectorOfMat = new VectorOfMat();
-                Model.Forward(vectorOfMat, Model.UnconnectedOutLayersNames);
-                VectorOfRect bboxes = new VectorOfRect();
-                Image<Bgr, byte> imageCrop = img.Clone();
-                for (int k = 0; k < vectorOfMat.Size; k++)
-                {
-                    var mat = vectorOfMat[k];
-                    var data = ArrayTo2DList(mat.GetData());
-                    for (int i = 0; i < data.Count; i++)
-                    {
-                        var row = data[i];
-                        var rowsscores = row.Skip(5).ToArray();
-                        var classId = rowsscores.ToList().IndexOf(rowsscores.Max());
-                        var confidence = rowsscores[classId];
-
-                        if (confidence > confThreshold)
-                        {
-                            var center_x = (int)(row[0] * img.Width);
-                            var center_y = (int)(row[1] * img.Height);
-
-                            var width = (int)(row[2] * img.Width);
-                            var height = (int)(row[3] * img.Height);
-
-                            var x = (int)(center_x - (width / 2));
-                            var y = (int)(center_y - (height / 2));
-                            Rectangle plate = new Rectangle(x - 5, y - 5, width + 10, height + 10);
-                            imageCrop = img.Clone();
-                            imageCrop.ROI = plate;
-                            imageCrop = imageCrop.Resize(500, 500, Inter.Cubic, preserveScale: true);
-                        }
-                    }
-
-                }
-                CvInvoke.Imwrite("imgtest.jpg", imageCrop);
-
-                ocrResult = engine.DetectText(imageCrop.ToBitmap());
-                List<string> arrayresult = new List<string>();
-                if (ocrResult != null)
-                {
-                    for (int i = 0; i < ocrResult.TextBlocks.Count; i++)
-                    {
-                        arrayresult.Add(ocrResult.TextBlocks[i].Text);
-                    }
-
-                    textPlates = string.Join("-", arrayresult);
-                    textPlates = Regex.Replace(textPlates, @"[^0-9a-zA-Z\-]", "");
-                    LPReturn obj = new LPReturn();
-                    result = obj.Result(textPlates, isValidPlatesNumber(textPlates));
-                }
-
             }
             catch (Exception ex)
             {
@@ -282,7 +210,7 @@ namespace TD.VLPR
         }
         public static bool isValidPlatesNumber(string inputPlatesNumber)
         {
-            string strRegex = @"(^[0-9]{2}-[A-Z0-9]{2,3}-[0-9]{4,5}$)|(^[A-Z]{0,4}-[0-9]{2}-[0-9]{2}$)|(^[A-Z0-9]{2}-[A-Z0-9]{2,3}-[A-Z0-9]{2,3}-[0-9]{2}$)|(^[0-9]{2}[A-Z]{1,2}-[0-9]{4,5}$)|(^[A-z0-9]{7,9}$)";
+            string strRegex = @"(^[0-9]{2}-[A-Z0-9]{2,3}-[0-9]{4,5}$)|(^[A-Z]{0,4}-[0-9]{2}-[0-9]{2}$)|(^[A-Z0-9]{2}-[A-Z0-9]{2,3}-[A-Z0-9]{2,3}-[0-9]{2}$)|(^[0-9]{2}[0-9A-Z]{1,2}-[0-9]{4,5}$)|(^[A-Z0-9]{7,9}$)";
             Regex re = new Regex(strRegex);
             if (re.IsMatch(inputPlatesNumber))
                 return (true);

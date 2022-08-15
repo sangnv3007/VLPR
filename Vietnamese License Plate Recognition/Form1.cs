@@ -24,7 +24,7 @@ namespace Vietnamese_License_Plate_Recognition
     {
         Net Model = null;
         string PathConfig = "yolov3.cfg";
-        string PathWeights = "yolov3_12000_LP.weights";
+        string PathWeights = "yolov3_Final.weights";
         OCRModelConfig config = null;
         OCRParameter oCRParameter = new OCRParameter();
         OCRResult ocrResult = new OCRResult();
@@ -125,7 +125,7 @@ namespace Vietnamese_License_Plate_Recognition
 
                             var x = (int)(center_x - (width / 2));
                             var y = (int)(center_y - (height / 2));
-                            Rectangle plate = new Rectangle(x - 5, y - 5, width + 10, height + 10);
+                            Rectangle plate = new Rectangle(x, y, width, height);
                             imageCrop = img.Clone();
                             imageCrop.ROI = plate;
                             imageCrop = imageCrop.Resize(500, 500, Inter.Cubic, preserveScale: true);
@@ -142,8 +142,8 @@ namespace Vietnamese_License_Plate_Recognition
                     {
                         arrayresult.Add(ocrResult.TextBlocks[i].Text);
                     }
-                    textPlates = string.Join("-", arrayresult);
-                    textPlates = Regex.Replace(textPlates, @"[^0-9a-zA-Z\-]", "");
+                    textPlates = string.Join("-", arrayresult);                   
+                    textPlates = Regex.Replace(textPlates, @"[^0-9A-Z\-]", "");
                     textBox1.Text = textPlates;
                     LPReturnForm obj = new LPReturnForm();
                     ResultLPForm resultobj = obj.Result(textPlates, isValidPlatesNumber(textPlates));                   
@@ -400,7 +400,7 @@ namespace Vietnamese_License_Plate_Recognition
         // method containing the regex
         public static bool isValidPlatesNumber(string inputPlatesNumber)
         {
-            string strRegex = @"(^[0-9]{2}-[A-Z0-9]{2,3}-[0-9]{4,5}$)|(^[A-Z]{0,4}-[0-9]{2}-[0-9]{2}$)|(^[A-Z0-9]{2}-[A-Z0-9]{2,3}-[A-Z0-9]{2,3}-[0-9]{2}$)|(^[0-9]{2}[A-Z]{1,2}-[0-9]{4,5}$)|(^[A-z0-9]{7,9}$)";
+            string strRegex = @"(^[0-9]{2}-[A-Z0-9]{2,3}-[0-9]{4,5}$)|(^[A-Z]{0,4}-[0-9]{2}-[0-9]{2}$)|(^[A-Z0-9]{2}-[A-Z0-9]{2,3}-[A-Z0-9]{2,3}-[0-9]{2}$)|(^[0-9]{2}[0-9A-Z]{1,2}-[0-9]{4,5}$)|(^[A-Z0-9]{7,9}$)";
             Regex re = new Regex(strRegex);
             if (re.IsMatch(inputPlatesNumber))
                 return (true);
@@ -409,8 +409,15 @@ namespace Vietnamese_License_Plate_Recognition
         }
         public void LoadModelRecognize()
         {
-            Model = DnnInvoke.ReadNetFromDarknet(PathConfig, PathWeights);//Load model detect LP
-            engine = new PaddleOCREngine(config, oCRParameter);
+            try
+            {
+                Model = DnnInvoke.ReadNetFromDarknet(PathConfig, PathWeights);//Load model detect LP
+                engine = new PaddleOCREngine(config, oCRParameter);
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show(ex.Message);
+            }
         }
 
         private void pictureBox6_Click(object sender, EventArgs e)
