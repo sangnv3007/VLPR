@@ -65,12 +65,12 @@ namespace TD.VLPR
             try
             {
                 float confThreshold = 0.8f;
-                int imgDefaultSize = 416;
-
+                int imgDefaultSizeH = 576;
+                int imgDefaultSizeW = 1024;
                 //Detect biển số xe
 
                 Image<Bgr, Byte> src = imgInput.ToImage<Bgr, Byte>();
-                var img = src.Resize(imgDefaultSize, imgDefaultSize, Inter.Cubic);
+                var img = src.Resize(imgDefaultSizeW, imgDefaultSizeH, Inter.Cubic);
                 var input = DnnInvoke.BlobFromImage(img, 1 / 255.0, swapRB: true);
                 Model.SetInput(input);
                 Model.SetPreferableBackend(Emgu.CV.Dnn.Backend.OpenCV);
@@ -108,7 +108,7 @@ namespace TD.VLPR
                     }
 
                 }
-                if (imageCrop.Height != imgDefaultSize && imageCrop.Width != imgDefaultSize)
+                if (imageCrop.Height != imgDefaultSizeH && imageCrop.Width != imgDefaultSizeW)
                 {
                     CvInvoke.Imwrite("imgcrop.jpg", imageCrop);
                     ocrResult = engine.DetectText(imageCrop.ToBitmap());
@@ -152,9 +152,6 @@ namespace TD.VLPR
                       .Resize(imgDefaultSize, imgDefaultSize, Inter.Cubic);
                 var input = DnnInvoke.BlobFromImage(img, 1 / 255.0, swapRB: true);
                 Model.SetInput(input);
-                Model.SetPreferableBackend(Emgu.CV.Dnn.Backend.OpenCV);
-                Model.SetPreferableTarget(Target.Cpu);
-
                 VectorOfMat vectorOfMat = new VectorOfMat();
                 Model.Forward(vectorOfMat, Model.UnconnectedOutLayersNames);
                 VectorOfRect bboxes = new VectorOfRect();
@@ -224,6 +221,8 @@ namespace TD.VLPR
         {
             //Load model detect LP
             Model = DnnInvoke.ReadNetFromDarknet(PathConfig, PathWeights);
+            Model.SetPreferableBackend(Emgu.CV.Dnn.Backend.OpenCV);
+            Model.SetPreferableTarget(Target.Cpu);
             engine = new PaddleOCREngine(config, oCRParameter);
         }
         public static bool isValidPlatesNumber(string inputPlatesNumber)

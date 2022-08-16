@@ -31,9 +31,16 @@ namespace Vietnamese_License_Plate_Recognition
             ///</summary>
 
             //var extracter = new NumberPlateExtracter();
-            //string path = @"C:\Users\Admin\Pictures\70fbd6d9dbfd16a34fec.jpg";
-            ////var img = new Image<Bgr, byte>(path);
-            //ResultLP resultobj = extracter.ProcessImage(path);
+            //string path = @"D:\Download Chorme\10 ngay\2022_07_01\LanVao_1\20220701_072027.637922568287320112.1.AnhBienSo.jpg";
+            //var img = new Image<Bgr, byte>(path);
+            ////Thời gian bắt đầu
+            //Stopwatch swObj = new Stopwatch();
+            //swObj.Start();
+            //ResultLP resultobj = extracter.ProcessImage(img.Mat);
+            ////Thời gian kết thúc
+            //swObj.Stop();
+            ////Tổng thời gian thực hiện               
+            //Console.WriteLine(Math.Round(swObj.Elapsed.TotalSeconds, 2).ToString()+ " giây");
             //Console.WriteLine("TextPlate: {0}", resultobj.LP);
             //Console.WriteLine("Status: {0}", resultobj.statusLP);
         }
