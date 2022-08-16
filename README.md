@@ -36,3 +36,4 @@ Dowload 2 file trong thư mục [backup](https://drive.google.com/drive/folders/
 Lưu ý: Hiện tại vì là bản demo nên độ chính xác chưa cao nên chương trình còn một số hạn chế sau:
 - Nhận dạng đúng cho những biển số rõ ràng, dể nhìn
 - Chưa nhận diện tốt những biển quá mờ, điều kiện ánh sáng quá chói hoặc biển bị che.
+- Không detect được biển số nếu biển số xe quá gần hoặc quá xa.
