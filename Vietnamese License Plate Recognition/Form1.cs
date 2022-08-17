@@ -17,6 +17,7 @@ using System.IO;
 using System.Diagnostics;
 using PaddleOCRSharp;
 using System.Text.RegularExpressions;
+using System.Drawing.Drawing2D;
 
 namespace Vietnamese_License_Plate_Recognition
 {
@@ -85,20 +86,34 @@ namespace Vietnamese_License_Plate_Recognition
 
             return list;
         }
-        //Hàm xử lý biển số xe 
-        string textPlates = "";
+        //Hàm xử lý biển số xe        
         public void ProcessImage(string path)
         {
             try
             {
-
+                string textPlates = "";
                 float confThreshold = 0.8f;
-                int imgDefaultSizeH = 576;//Kich thuoc Height dau vao
-                int imgDefaultSizeW = 1024;//Kich thuoc Weight dau vao
-                //Detect biển số xe                
-                var img = new Image<Bgr, byte>(path).Resize(imgDefaultSizeW, imgDefaultSizeH, Inter.Cubic);
+                int imgDefaultSizeH = 0;//Kich thuoc default Height dau vao
+                int imgDefaultSizeW = 0;//Kich thuoc default Weight dau vao
+                //Detect biển số xe               
+                var img = new Image<Bgr, byte>(path);
+                if (img.Width % 32 != 0 || img.Height % 32 != 0)
+                {
+                    imgDefaultSizeW = img.Width / 32 * 32;
+                    imgDefaultSizeH = img.Height / 32 * 32;
+                }
+                else
+                {
+                    imgDefaultSizeH = img.Height;
+                    imgDefaultSizeW = img.Width;
+                }
+                //img = img.Resize(imgDefaultSizeW, imgDefaultSizeH, Inter.Cubic);
+                img = ResizeImage(img, 1024,0);
+                //Image imgPhoto = (Image)img.ToBitmap();
+                //imgPhoto = FixedSize(imgPhoto, 1024, 1024);
+                //CvInvoke.WaitKey();
                 label6.Text = path;
-                var input = DnnInvoke.BlobFromImage(img, 1 / 255.0, swapRB: false);         
+                var input = DnnInvoke.BlobFromImage(img, 1 / 255.0, swapRB: false);
                 Model.SetInput(input);
                 VectorOfMat vectorOfMat = new VectorOfMat();
                 Model.Forward(vectorOfMat, Model.UnconnectedOutLayersNames);
@@ -126,7 +141,7 @@ namespace Vietnamese_License_Plate_Recognition
 
                             var x = (int)(center_x - (width / 2));
                             var y = (int)(center_y - (height / 2));
-                            Rectangle plate = new Rectangle(x-5, y-5, width+10, height+10);
+                            Rectangle plate = new Rectangle(x - 5, y - 5, width + 10, height + 10);
                             imageCrop = img.Clone();
                             imageCrop.ROI = plate;
                             PlateImagesList.Add(imageCrop);
@@ -134,7 +149,7 @@ namespace Vietnamese_License_Plate_Recognition
                     }
                 }
                 //Kiểm tra kết quả các ảnh đã detect được
-                if(PlateImagesList.Count > 0)
+                if (PlateImagesList.Count > 0)
                 {
                     string temp = String.Empty;
                     for (int i = 0; i < PlateImagesList.Count; i++)
@@ -153,15 +168,24 @@ namespace Vietnamese_License_Plate_Recognition
                                     arrayresult.Add(TextBlocksPlate);
                                 }
                             }
-                            textPlates = string.Join("-", arrayresult);
-                            CvInvoke.Imwrite("imgcropColor.jpg", PlateImagesList[i]);
-                            pictureBox3.Image = PlateImagesList[i].ToBitmap();
+                            if (arrayresult.Count != 0)
+                            {
+                                textPlates = string.Join("-", arrayresult);
+                                CvInvoke.Imwrite("imgcropColor.jpg", PlateImagesList[i]);
+                                pictureBox3.Image = PlateImagesList[i].ToBitmap();
+                                textBox1.Text = textPlates;
+                                LPReturnForm obj = new LPReturnForm();
+                                ResultLPForm resultobj = obj.Result(textPlates, true);
+                                label2.Text = "Biển số: " + resultobj.LP + ", status: " + resultobj.statusLP;
+                            }
+                            else
+                            {
+                                pictureBox3.Image = PlateImagesList[i].ToBitmap();
+                                LPReturnForm obj = new LPReturnForm();
+                                ResultLPForm resultobj = obj.Result("Null", false);
+                                label2.Text = "Biển số: " + resultobj.LP + ", status: " + resultobj.statusLP;
+                            }
                         }
-                        
-                        textBox1.Text = textPlates;
-                        LPReturnForm obj = new LPReturnForm();
-                        ResultLPForm resultobj = obj.Result(textPlates, true);
-                        label2.Text = "Biển số: " + resultobj.LP + ", status: " + resultobj.statusLP;                      
                     }
                 }
                 else
@@ -176,232 +200,6 @@ namespace Vietnamese_License_Plate_Recognition
             {
                 MessageBox.Show(ex.Message);
             }
-        }
-
-        //public void IdentifyContours(Image<Bgr,byte> colorImage)
-        //{
-        //    List<Rectangle> listRect = new List<Rectangle>();
-        //    Image<Gray, byte> srcGray = colorImage.Convert<Gray, byte>();
-        //    Image<Gray, byte> imageT = new Image<Gray, byte>(srcGray.Width, srcGray.Height);
-        //    //srcGray = srcGray.Dilate(2);
-        //    CvInvoke.AdaptiveThreshold(srcGray, imageT, 255.0, AdaptiveThresholdType.MeanC, ThresholdType.BinaryInv, 51, 9);           
-        //    Image<Gray, byte> imageThresh = imageT;
-        //    //CvInvoke.Imwrite(@"D:\PaddleOCR\imgtest2.jpg", imageT);
-        //    pictureBox3.Image = imageT.ToBitmap();
-        //    imageT = imageT.ThresholdBinary(new Gray(100), new Gray(255.0));//Cần xử lý thêm
-        //    var rate = (double)imageT.Width/(double)imageT.Height;
-        //    Console.WriteLine(rate);
-        //    VectorOfVectorOfPoint contour = new VectorOfVectorOfPoint();
-        //    Mat hier = new Mat();
-        //    CvInvoke.FindContours(imageT, contour, hier, RetrType.List, ChainApproxMethod.ChainApproxSimple);
-        //    string textPlates = "";
-        //    if (contour.Size > 0)
-        //    {
-        //        var max_H = 0;
-        //        //Biển 1 dòng
-        //        if (rate > 3)//Tỉ lệ dài / rộng
-        //        {
-        //            Console.WriteLine("Day la bien 1 dong");                                 
-        //            for (int c = 0; c < contour.Size; c++)
-        //            {
-        //                Rectangle rect = CvInvoke.BoundingRectangle(contour[c]);                    
-        //                //double area = CvInvoke.ContourArea(contour[c]);
-        //                //double rate = (double)rect.Width / (double)rect.Height;
-        //                if (rect.Width > 15 && rect.Width < 80 && rect.Height > 35 && rect.Height < 100 && rect.X > 10 && rect.Y > 10)
-        //                {
-        //                    if (max_H < rect.Height) max_H = rect.Height;
-        //                    //Console.WriteLine("X: {0}, Y: {1}, W: {2}, H: {3}", rect.X, rect.Y, rect.Width, rect.Height);
-        //                    CvInvoke.Rectangle(colorImage, rect, new MCvScalar(0, 0, 255), 1);
-        //                    listRect.Add(rect);
-        //                }                       
-        //            }
-        //            for(int i = 0;i<listRect.Count;i++)
-        //            {
-        //                if(listRect[i].Height + 10 < max_H) listRect.RemoveAt(i);
-        //            }    
-        //            List<Rectangle> up = new List<Rectangle>();
-        //            List<Rectangle> dow = new List<Rectangle>();
-        //            ArrangePlates(listRect, false, up, dow);                 
-        //            for (int i = 0; i < listRect.Count; i++)
-        //            {
-        //                Image<Gray, byte> imageCrop = imageThresh;
-        //                imageCrop = imageCrop.Dilate(2);
-        //                imageCrop.ROI = listRect[i];
-        //                //CvInvoke.Imshow("Numbers Plates Up", imageCrop);
-        //                CvInvoke.Imwrite("images/LP("+i+").jpg", imageCrop);
-        //                //CvInvoke.WaitKey(0);
-        //            }
-        //            textPlates = func();
-        //            textBox1.Text = textPlates;
-        //        }
-        //        //Biển 2 dòng
-        //        else
-        //        {
-        //            Console.WriteLine("Day la bien 2 dong");
-        //            for (int c = 0; c < contour.Size; c++)
-        //            {
-        //                Rectangle rect = CvInvoke.BoundingRectangle(contour[c]);                     
-        //                if (rect.Width > 20 && rect.Width < 150 && rect.Height > 70 && rect.Height < 170 && rect.X > 10 && rect.Y > 10)
-        //                {
-        //                    if (max_H < rect.Height) max_H = rect.Height;
-        //                    //Console.WriteLine("X: {0}, Y: {1}, W: {2}, H: {3}", rect.X, rect.Y, rect.Width, rect.Height);
-        //                    CvInvoke.Rectangle(colorImage, rect, new MCvScalar(0, 0, 255), 1);
-        //                    listRect.Add(rect);
-        //                }
-        //            }
-        //            for (int i = 0; i < listRect.Count; i++)
-        //            {
-        //                if (listRect[i].Height + 20< max_H) listRect.RemoveAt(i);
-        //            }
-        //            List<Rectangle> up = new List<Rectangle>();
-        //            List<Rectangle> dow = new List<Rectangle>();
-        //            ArrangePlates(listRect, true, up, dow);
-        //            //Console.WriteLine("Up count: {0}, Dow count: {1}", up.Count, dow.Count);
-        //            for (int i = 0; i < up.Count; i++)
-        //            {
-        //                Image<Gray, byte> imageCrop = imageThresh;
-        //                imageCrop = imageCrop.Dilate(2);
-        //                imageCrop.ROI = up[i];
-        //                //CvInvoke.Imshow("Numbers Plates Up", imageCrop);
-        //                CvInvoke.Imwrite("images/LP_Up(" + i + ").jpg", imageCrop);
-        //                //CvInvoke.WaitKey(0);                       
-        //            }
-        //            textPlates = func();
-        //            textPlates += " - ";
-        //            for (int i = 0; i < dow.Count; i++)
-        //            {
-        //                Image<Gray, byte> imageCrop = imageThresh;
-        //                imageCrop = imageCrop.Dilate(2);
-        //                imageCrop.ROI = dow[i];                     
-        //                //CvInvoke.Imshow("Numbers Plates(imgD)", imageCrop);
-        //                CvInvoke.Imwrite("images/LP_Dow(" + i + ").jpg", imageCrop);
-        //                //CvInvoke.WaitKey(0);
-        //            }
-        //            textPlates += func();
-        //        }              
-        //    }
-        //    else
-        //    {
-        //        MessageBox.Show("Không nhận diện được ảnh này. Thử lại ảnh khác!", "TD SJC");
-        //    }
-        //    //Console.WriteLine(listRect.Count);
-        //    textBox1.Text = textPlates;
-        //    //pictureBox2.Image = colorImage.ToBitmap();
-        //}
-
-        public void ArrangePlates(List<Rectangle> listRect, bool isTwoPlates, List<Rectangle> up, List<Rectangle> dow)
-        {
-            if (isTwoPlates)
-            {
-                int up_y = 0, dow_y = 0;
-                bool flag_up = false;
-                if (listRect == null) return;
-                for (int i = 0; i < listRect.Count; i++)
-                {
-                    for (int j = i; j < listRect.Count; j++)
-                    {
-                        if (listRect[i].Y > listRect[j].Y + 100)
-                        {
-                            flag_up = true;
-                            up_y = listRect[j].Y;
-                            dow_y = listRect[i].Y;
-                            break;
-                        }
-                        else if (listRect[j].Y > listRect[i].Y + 100)
-                        {
-                            flag_up = true;
-                            up_y = listRect[i].Y;
-                            dow_y = listRect[j].Y;
-                            break;
-                        }
-                        if (flag_up == true) break;
-                    }
-                }
-                for (int i = 0; i < listRect.Count; i++)
-                {
-                    //Up Plate
-                    if (listRect[i].Y < up_y + 50 && listRect[i].Y > up_y - 50)
-                    {
-                        up.Add(listRect[i]);
-                    }
-                    //Dow Plate
-                    else if (listRect[i].Y < dow_y + 50 && listRect[i].Y > dow_y - 50)
-                    {
-                        dow.Add(listRect[i]);
-                    }
-                }
-                if (flag_up == false) dow = listRect;
-                //Sắp xếp các số trong Up PLate
-                for (int i = 0; i < up.Count; i++)
-                {
-                    for (int j = i; j < up.Count; j++)
-                    {
-                        if (up[i].X > up[j].X)
-                        {
-                            Rectangle w = up[i];
-                            up[i] = up[j];
-                            up[j] = w;
-                        }
-                    }
-                }
-                //Sắp xếp các số trong Dow PLate
-                for (int i = 0; i < dow.Count; i++)
-                {
-                    for (int j = i; j < dow.Count; j++)
-                    {
-                        if (dow[i].X > dow[j].X)
-                        {
-                            Rectangle w = dow[i];
-                            dow[i] = dow[j];
-                            dow[j] = w;
-                        }
-                    }
-                }
-            }
-            else
-            {
-                for (int i = 0; i < listRect.Count; i++)
-                {
-                    for (int j = i; j < listRect.Count; j++)
-                    {
-                        if (listRect[i].X > listRect[j].X)
-                        {
-                            Rectangle w = listRect[i];
-                            listRect[i] = listRect[j];
-                            listRect[j] = w;
-                        }
-                    }
-                }
-            }
-        }
-        public Rectangle cutPlates(List<Rectangle> listRect, out double chenhlech)
-        {
-            Rectangle Bien = new Rectangle();
-            int xmin = listRect[0].X, xmax = listRect[0].X + listRect[0].Width;
-            int ymin = listRect[0].Y, ymax = listRect[0].Y;
-            int Y = 0;
-            int Height = 0;
-            for (int i = 0; i < listRect.Count; i++)
-            {
-                if (xmin > listRect[i].X)
-                {
-                    xmin = listRect[i].X;
-                    ymin = listRect[i].Y;
-                }
-                if (xmax < listRect[i].X + listRect[i].Width)
-                {
-                    xmax = listRect[i].X + listRect[i].Width;
-                    ymax = listRect[i].Y;
-                }
-                Y += listRect[i].Y;
-                Height += listRect[i].Height;
-            }
-            Bien.X = xmin - 10;
-            Bien.Y = Y / listRect.Count - 10;
-            Bien.Width = xmax - xmin + 20;
-            Bien.Height = Height / listRect.Count + 20;
-            chenhlech = ymax - ymin;
-            return Bien;
         }
 
         private void pictureBox1_Click(object sender, EventArgs e)
@@ -421,7 +219,16 @@ namespace Vietnamese_License_Plate_Recognition
         // method containing the regex
         public static bool isValidPlatesNumberForm(string inputPlatesNumber)
         {
-            string strRegex = @"(^[A-Z0-9]{2,3}-?[A-Z0-9]{0,3}$)|(^[0-9]{4,5}$)|(^[0-9]{2}[A-Z]{1,2}-?[0-9]{4,5}$)|(^[A-Z]{2}-?[0-9]{2}-?[0-9]{2}$)|(^[A-Z0-9]{2}-?[A-Z0-9]{2,3}-?[A-Z0-9]{2,3}-?[0-9]{2}$)";
+            string strRegex = @"(^[A-Z0-9]{2,3}[A-Z0-9]{0,4}$)|(^[0-9]{4,5}$)|(^[0-9]{2}[A-Z]{1,2}[0-9]{4,5}$)|(^[A-Z0-9]{2}[A-Z0-9]{2,3}[A-Z0-9]{2,3}[0-9]{2}$)";
+            Regex re = new Regex(strRegex);
+            if (re.IsMatch(inputPlatesNumber))
+                return (true);
+            else
+                return (false);
+        }
+        public static bool isValidPlatesNumber(string inputPlatesNumber)
+        {
+            string strRegex = @"(^[A-Z0-9]*$)";
             Regex re = new Regex(strRegex);
             if (re.IsMatch(inputPlatesNumber))
                 return (true);
@@ -443,10 +250,81 @@ namespace Vietnamese_License_Plate_Recognition
                 Application.Exit();
             }
         }
+        static Image FixedSize(Image imgPhoto, int Width, int Height)
+        {
+            int sourceWidth = imgPhoto.Width;
+            int sourceHeight = imgPhoto.Height;
+            int sourceX = 0;
+            int sourceY = 0;
+            int destX = 0;
+            int destY = 0;
 
+            float nPercent = 0;
+            float nPercentW = 0;
+            float nPercentH = 0;
+
+            nPercentW = ((float)Width / (float)sourceWidth);
+            nPercentH = ((float)Height / (float)sourceHeight);
+            if (nPercentH < nPercentW)
+            {
+                nPercent = nPercentH;
+                destX = System.Convert.ToInt16((Width -
+                              (sourceWidth * nPercent)) / 2);
+            }
+            else
+            {
+                nPercent = nPercentW;
+                destY = System.Convert.ToInt16((Height -
+                              (sourceHeight * nPercent)) / 2);
+            }
+
+            int destWidth = (int)(sourceWidth * nPercent);
+            int destHeight = (int)(sourceHeight * nPercent);
+
+            Bitmap bmPhoto = new Bitmap(Width, Height,
+                              PixelFormat.Format24bppRgb);
+            bmPhoto.SetResolution(imgPhoto.HorizontalResolution,
+                             imgPhoto.VerticalResolution);
+
+            Graphics grPhoto = Graphics.FromImage(bmPhoto);
+            grPhoto.Clear(Color.Red);
+            grPhoto.InterpolationMode =
+                    InterpolationMode.HighQualityBicubic;
+
+            grPhoto.DrawImage(imgPhoto,
+                new Rectangle(destX, destY, destWidth, destHeight),
+                new Rectangle(sourceX, sourceY, sourceWidth, sourceHeight),
+                GraphicsUnit.Pixel);
+
+            grPhoto.Dispose();
+            return bmPhoto;
+        }       
         private void pictureBox6_Click(object sender, EventArgs e)
         {
 
+        }
+        public static Image<Bgr, byte> ResizeImage(Image<Bgr, byte> imageOriginal, int width = 0, int height = 0)
+        {
+            var dim = new Size(0, 0);
+            (int h, int w) = (imageOriginal.Width, imageOriginal.Height);
+            if (width == 0 && height == 0)
+            {
+                return imageOriginal;
+            }
+            if (width != 0)
+            {
+                double r = height / (float)h;
+                dim.Width = (int)(w * r);
+                dim.Height = imageOriginal.Height;
+            }
+            else
+            {
+                double r = width / (float)w;
+                dim.Width = (int)(w * r);
+                dim.Height = imageOriginal.Width;
+            }
+            Image<Bgr, byte> imageReszie = imageOriginal.Resize(dim.Width, dim.Height, Inter.Cubic);
+            return imageReszie;
         }
     }
     public class ResultLPForm
