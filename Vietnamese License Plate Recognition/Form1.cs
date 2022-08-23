@@ -18,18 +18,20 @@ using System.Diagnostics;
 using PaddleOCRSharp;
 using System.Text.RegularExpressions;
 using System.Drawing.Drawing2D;
+using TensorFlow;
 
 namespace Vietnamese_License_Plate_Recognition
 {
     public partial class Form1 : Form
     {
         Net Model = null;
-        string PathConfig = "yolov3.cfg";
-        string PathWeights = "yolov3_Final.weights";
+        string PathConfig = "yolov4-tiny-custom.cfg";
+        string PathWeights = "yolov4-tiny-custom_final.weights";
         OCRModelConfig config = null;
         OCRParameter oCRParameter = new OCRParameter();
         OCRResult ocrResult = new OCRResult();
         PaddleOCREngine engine = null;
+        //Net mobile_net = DnnInvoke.ReadNetFromTensorflow("saved_model.pb", "label_map.pbtxt");
         public Form1()
         {
             InitializeComponent();
@@ -89,35 +91,25 @@ namespace Vietnamese_License_Plate_Recognition
         //Hàm xử lý biển số xe        
         public void ProcessImage(string path)
         {
-            try
-            {
                 string textPlates = "";
                 float confThreshold = 0.8f;
                 int imgDefaultSizeH = 0;//Kich thuoc default Height dau vao
                 int imgDefaultSizeW = 0;//Kich thuoc default Weight dau vao
-                //Detect biển số xe               
-                var img = new Image<Bgr, byte>(path);
+                //Thay đổi kich thước ảnh đầu vào           
+                var img = new Image<Bgr, byte>(path);             
+                //img = ResizeImage(img, 1280,0);
                 if (img.Width % 32 != 0 || img.Height % 32 != 0)
                 {
                     imgDefaultSizeW = img.Width / 32 * 32;
                     imgDefaultSizeH = img.Height / 32 * 32;
+                    img = img.Resize(imgDefaultSizeW, imgDefaultSizeH, Inter.Cubic);
                 }
-                else
-                {
-                    imgDefaultSizeH = img.Height;
-                    imgDefaultSizeW = img.Width;
-                }
-                //img = img.Resize(imgDefaultSizeW, imgDefaultSizeH, Inter.Cubic);
-                img = ResizeImage(img, 1024,0);
-                //Image imgPhoto = (Image)img.ToBitmap();
-                //imgPhoto = FixedSize(imgPhoto, 1024, 1024);
-                //CvInvoke.WaitKey();
                 label6.Text = path;
-                var input = DnnInvoke.BlobFromImage(img, 1 / 255.0, swapRB: false);
+                //Dự đoán vùng chứa biển số
+                var input = DnnInvoke.BlobFromImage(img, 1 / 255.0, swapRB: true);
                 Model.SetInput(input);
                 VectorOfMat vectorOfMat = new VectorOfMat();
                 Model.Forward(vectorOfMat, Model.UnconnectedOutLayersNames);
-                VectorOfRect bboxes = new VectorOfRect();
                 Image<Bgr, byte> imageCrop = img.Clone();
                 List<Image<Bgr, byte>> PlateImagesList = new List<Image<Bgr, byte>>();
                 for (int k = 0; k < vectorOfMat.Size; k++)
@@ -141,7 +133,7 @@ namespace Vietnamese_License_Plate_Recognition
 
                             var x = (int)(center_x - (width / 2));
                             var y = (int)(center_y - (height / 2));
-                            Rectangle plate = new Rectangle(x - 5, y - 5, width + 10, height + 10);
+                            Rectangle plate = new Rectangle(x, y, width, height);
                             imageCrop = img.Clone();
                             imageCrop.ROI = plate;
                             PlateImagesList.Add(imageCrop);
@@ -151,20 +143,35 @@ namespace Vietnamese_License_Plate_Recognition
                 //Kiểm tra kết quả các ảnh đã detect được
                 if (PlateImagesList.Count > 0)
                 {
-                    string temp = String.Empty;
+                    string temp = String.Empty;                    
                     for (int i = 0; i < PlateImagesList.Count; i++)
                     {
+                    //Bitmap rotate_image = rotateImage(PlateImagesList[i].ToBitmap(), 8.5);
+                    //PlateImagesList[i] = PlateImagesList[i].Rotate(7.25, new Bgr(43, 40, 33));
+                    //CvInvoke.Imshow("gray", PlateImagesList[i].Mat);
+                    //CvInvoke.WaitKey();
+                    //var imgGray = rotate_image.ToImage<Gray, byte>().Convert<Gray, byte>().Clone();
+                    //Image<Gray, byte> output_image = imgGray.SmoothGaussian(5);
+                    //CvInvoke.Imshow("gray", output_image.Mat);
+                    //CvInvoke.WaitKey();
+                        //findLineImage(PlateImagesList[i]);
                         ocrResult = engine.DetectText(PlateImagesList[i].ToBitmap());
                         List<string> arrayresult = new List<string>();
-                        if (ocrResult.Text.Length > temp.Length && ocrResult.Text != String.Empty)
+                        // Do dai toi da cua bien co the chua la 12 ky tu(bao gom ca cac ky tu "-" hoặc ".")
+                        if (ocrResult.Text.Length > temp.Length && ocrResult.Text != String.Empty && ocrResult.Text.Length <= 12)
                         {
                             temp = ocrResult.Text;
+                            double accuracy = 1;
                             for (int j = 0; j < ocrResult.TextBlocks.Count; j++)
                             {
                                 string TextBlocksPlate = ocrResult.TextBlocks[j].Text;
-                                TextBlocksPlate = Regex.Replace(TextBlocksPlate, @"[^0-9A-Z]", "");
+                                TextBlocksPlate = Regex.Replace(TextBlocksPlate, @"[^0-9A-Z\-]", "");
                                 if (isValidPlatesNumberForm(TextBlocksPlate))
                                 {
+                                    if(ocrResult.TextBlocks[j].Score < accuracy)
+                                    {
+                                        accuracy = Math.Round(ocrResult.TextBlocks[j].Score, 2);
+                                    }    
                                     arrayresult.Add(TextBlocksPlate);
                                 }
                             }
@@ -175,15 +182,15 @@ namespace Vietnamese_License_Plate_Recognition
                                 pictureBox3.Image = PlateImagesList[i].ToBitmap();
                                 textBox1.Text = textPlates;
                                 LPReturnForm obj = new LPReturnForm();
-                                ResultLPForm resultobj = obj.Result(textPlates, true);
-                                label2.Text = "Biển số: " + resultobj.LP + ", status: " + resultobj.statusLP;
+                                ResultLPForm resultobj = obj.Result(textPlates, true, accuracy);
+                                label2.Text = "Biển số: " + resultobj.textPlate + ", status: " + resultobj.statusPlate + ", acc: "+ resultobj.accPlate;
                             }
                             else
                             {
                                 pictureBox3.Image = PlateImagesList[i].ToBitmap();
                                 LPReturnForm obj = new LPReturnForm();
-                                ResultLPForm resultobj = obj.Result("Null", false);
-                                label2.Text = "Biển số: " + resultobj.LP + ", status: " + resultobj.statusLP;
+                                ResultLPForm resultobj = obj.Result("Null", false,0);
+                                label2.Text = "Biển số: " + resultobj.textPlate + ", status: " + resultobj.statusPlate + ", acc: " + resultobj.accPlate;
                             }
                         }
                     }
@@ -191,15 +198,9 @@ namespace Vietnamese_License_Plate_Recognition
                 else
                 {
                     LPReturnForm obj = new LPReturnForm();
-                    ResultLPForm resultobj = obj.Result("No license plate found", false);
-                    label2.Text = "Biển số: " + resultobj.LP + ", status: " + resultobj.statusLP;
+                    ResultLPForm resultobj = obj.Result("No license plate found", false,0);
+                    label2.Text = "Biển số: " + resultobj.textPlate + ", status: " + resultobj.statusPlate + ", acc: " + resultobj.accPlate;
                 }
-
-            }
-            catch (Exception ex)
-            {
-                MessageBox.Show(ex.Message);
-            }
         }
 
         private void pictureBox1_Click(object sender, EventArgs e)
@@ -219,16 +220,7 @@ namespace Vietnamese_License_Plate_Recognition
         // method containing the regex
         public static bool isValidPlatesNumberForm(string inputPlatesNumber)
         {
-            string strRegex = @"(^[A-Z0-9]{2,3}[A-Z0-9]{0,4}$)|(^[0-9]{4,5}$)|(^[0-9]{2}[A-Z]{1,2}[0-9]{4,5}$)|(^[A-Z0-9]{2}[A-Z0-9]{2,3}[A-Z0-9]{2,3}[0-9]{2}$)";
-            Regex re = new Regex(strRegex);
-            if (re.IsMatch(inputPlatesNumber))
-                return (true);
-            else
-                return (false);
-        }
-        public static bool isValidPlatesNumber(string inputPlatesNumber)
-        {
-            string strRegex = @"(^[A-Z0-9]*$)";
+            string strRegex = @"(^[0-9]{2}-?[A-Z0-9]{1,3}$)|(^[0-9]{2,5}$)|(^[0-9]{2,3}-[0,9]{2}$)|(^[A-Z0-9]{2,3}-?[0-9]{4,5}$)|(^[A-Z]{2}-?[0-9]{0,4}$)|(^[0-9]{2}-?[A-Z0-9]{2,3}-?[A-Z0-9]{2,3}-?[0-9]{2}$)|(^[A-Z]{2}-?[0-9]{2}-?[0-9]{2}$)|(^[0-9]{3}-?[A-Z0-9]{2}$)";
             Regex re = new Regex(strRegex);
             if (re.IsMatch(inputPlatesNumber))
                 return (true);
@@ -240,8 +232,8 @@ namespace Vietnamese_License_Plate_Recognition
             try
             {
                 Model = DnnInvoke.ReadNetFromDarknet(PathConfig, PathWeights);//Load model detect LP
-                Model.SetPreferableBackend(Emgu.CV.Dnn.Backend.OpenCV);
-                Model.SetPreferableTarget(Target.Cpu);
+                //Model.SetPreferableBackend(Emgu.CV.Dnn.Backend.OpenCV);
+                //Model.SetPreferableTarget(Target.Cpu);
                 engine = new PaddleOCREngine(config, oCRParameter);
             }
             catch (Exception ex)
@@ -249,56 +241,8 @@ namespace Vietnamese_License_Plate_Recognition
                 MessageBox.Show(ex.Message);
                 Application.Exit();
             }
+
         }
-        static Image FixedSize(Image imgPhoto, int Width, int Height)
-        {
-            int sourceWidth = imgPhoto.Width;
-            int sourceHeight = imgPhoto.Height;
-            int sourceX = 0;
-            int sourceY = 0;
-            int destX = 0;
-            int destY = 0;
-
-            float nPercent = 0;
-            float nPercentW = 0;
-            float nPercentH = 0;
-
-            nPercentW = ((float)Width / (float)sourceWidth);
-            nPercentH = ((float)Height / (float)sourceHeight);
-            if (nPercentH < nPercentW)
-            {
-                nPercent = nPercentH;
-                destX = System.Convert.ToInt16((Width -
-                              (sourceWidth * nPercent)) / 2);
-            }
-            else
-            {
-                nPercent = nPercentW;
-                destY = System.Convert.ToInt16((Height -
-                              (sourceHeight * nPercent)) / 2);
-            }
-
-            int destWidth = (int)(sourceWidth * nPercent);
-            int destHeight = (int)(sourceHeight * nPercent);
-
-            Bitmap bmPhoto = new Bitmap(Width, Height,
-                              PixelFormat.Format24bppRgb);
-            bmPhoto.SetResolution(imgPhoto.HorizontalResolution,
-                             imgPhoto.VerticalResolution);
-
-            Graphics grPhoto = Graphics.FromImage(bmPhoto);
-            grPhoto.Clear(Color.Red);
-            grPhoto.InterpolationMode =
-                    InterpolationMode.HighQualityBicubic;
-
-            grPhoto.DrawImage(imgPhoto,
-                new Rectangle(destX, destY, destWidth, destHeight),
-                new Rectangle(sourceX, sourceY, sourceWidth, sourceHeight),
-                GraphicsUnit.Pixel);
-
-            grPhoto.Dispose();
-            return bmPhoto;
-        }       
         private void pictureBox6_Click(object sender, EventArgs e)
         {
 
@@ -306,49 +250,71 @@ namespace Vietnamese_License_Plate_Recognition
         public static Image<Bgr, byte> ResizeImage(Image<Bgr, byte> imageOriginal, int width = 0, int height = 0)
         {
             var dim = new Size(0, 0);
-            (int h, int w) = (imageOriginal.Width, imageOriginal.Height);
+            (int w, int h) = (imageOriginal.Width, imageOriginal.Height);
             if (width == 0 && height == 0)
             {
                 return imageOriginal;
             }
-            if (width != 0)
+            if (width == 0)
             {
                 double r = height / (float)h;
                 dim.Width = (int)(w * r);
-                dim.Height = imageOriginal.Height;
+                dim.Height = height;
             }
             else
             {
+                //double r = width / (float)w;
                 double r = width / (float)w;
-                dim.Width = (int)(w * r);
-                dim.Height = imageOriginal.Width;
+                dim.Width = width;
+                dim.Height = (int)(h * r);
             }
             Image<Bgr, byte> imageReszie = imageOriginal.Resize(dim.Width, dim.Height, Inter.Cubic);
             return imageReszie;
         }
+        public static void findLineImage(Image<Bgr, byte> img)
+        {
+            Image<Gray, byte> gray_image = img.Convert<Gray, byte>();
+            Image<Gray, byte> img_canny = new Image<Gray, byte>(img.Width, img.Height);
+            CvInvoke.WaitKey();
+            CvInvoke.Canny(gray_image, img_canny, 30, 100, apertureSize: 3);
+            //CvInvoke.MedianBlur(gray_image, gray_image, 3);
+            CvInvoke.Imshow("img", img_canny.Mat);
+            CvInvoke.WaitKey();
+            LineSegment2D[] array = CvInvoke.HoughLinesP(img_canny, 1, Math.PI / 180, 100, minLineLength: img.Width/4, maxGap: img.Height/4);
+            Console.WriteLine(array[0]);
+            //double angle = 0;
+            //int nline = lines.Length;
+      
+        }
+
     }
     public class ResultLPForm
     {
         /// <summary>
         /// Thông tin biển số xe
         /// </summary>
-        public string LP { get; set; }
+        public string textPlate { get; set; }
         /// <summary>
         /// 0 : Thành công
         /// 1 : Không nhận diện được hoặc nhận diện sai
         /// </summary>
-        public int statusLP { get; set; }
+        public int statusPlate { get; set; }
+        /// <summary>
+        /// Độ chính xác nhận dạng biển số xe
+        /// </summary>
+        public double accPlate { get; set; }
     }
 
     public class LPReturnForm
     {
         // Create a class result for ResultLP.
-        public ResultLPForm Result(string LP, bool statusLP)
+        public ResultLPForm Result(string textPlate, bool statusPlate, double accPlate)
         {
             ResultLPForm result = new ResultLPForm();
-            result.LP = LP;
-            if (statusLP) result.statusLP = 0;
-            else result.statusLP = 1;
+            result.textPlate = textPlate;
+            if (statusPlate) result.statusPlate = 0;
+            else result.statusPlate = 1;
+            result.accPlate = accPlate;
             return result;
         }
     }
