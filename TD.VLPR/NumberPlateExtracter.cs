@@ -26,10 +26,11 @@ namespace TD.VLPR
         OCRModelConfig config = null;
         OCRParameter oCRParameter = new OCRParameter();
         OCRResult ocrResult = new OCRResult();
+        OCRResult ocrResultGray = new OCRResult();
         PaddleOCREngine engine = null;
         public NumberPlateExtracter(
-            string pathConfig = "yolov3.cfg",
-            string pathWeights = "yolov3_Final.weights")
+            string pathConfig = "yolov4-tiny-custom.cfg",
+            string pathWeights = "yolov4-tiny-custom_final.weights")
         {
             PathConfig = pathConfig;
             PathWeights = pathWeights;
@@ -56,26 +57,32 @@ namespace TD.VLPR
 
             return list;
         }
-
-        ResultLP result = new ResultLP();
+       
         //Hàm trích xuất thông tin biển số xe từ đường dẫn ảnh trả về obj
         public ResultLP ProcessImage(Mat imgInput)
-        {            
+        {
+            ResultLP result = new ResultLP();
             try
             {
                 string textPlates = string.Empty;
-                float confThreshold = 0.8f;
-                int imgDefaultSizeH = 416;//Kich thuoc Height dau vao
-                int imgDefaultSizeW = 416;//Kich thuoc Weight dau vao
-                //Detect biển số xe
+                float confThreshold = 0.8f;// Ngưỡng tin cậy
 
-                Image<Bgr, Byte> src = imgInput.ToImage<Bgr, Byte>();
-                var img = src.Resize(imgDefaultSizeW, imgDefaultSizeH, Inter.Cubic);
+                //Thay đổi kích thước ảnh
+
+                Image<Bgr, Byte> img = imgInput.ToImage<Bgr, Byte>();
+                if (img.Width % 32 != 0 || img.Height % 32 != 0)
+                {
+                    int imgDefaultSizeW = img.Width / 32 * 32;
+                    int imgDefaultSizeH = img.Height / 32 * 32;
+                    img = img.Resize(imgDefaultSizeW, imgDefaultSizeH, Inter.Cubic);
+                }
+
+                //Đưa ra kết quả từ mô hình
+
                 var input = DnnInvoke.BlobFromImage(img, 1 / 255.0, swapRB: true);
                 Model.SetInput(input);
                 VectorOfMat vectorOfMat = new VectorOfMat();
                 Model.Forward(vectorOfMat, Model.UnconnectedOutLayersNames);
-                VectorOfRect bboxes = new VectorOfRect();
                 Image<Bgr, byte> imageCrop = img.Clone();
                 List<Image<Bgr, byte>> PlateImagesList = new List<Image<Bgr, byte>>();
                 for (int k = 0; k < vectorOfMat.Size; k++)
@@ -99,44 +106,56 @@ namespace TD.VLPR
 
                             var x = (int)(center_x - (width / 2));
                             var y = (int)(center_y - (height / 2));
-                            Rectangle plate = new Rectangle(x - 5, y - 5, width + 10, height + 10);
+                            Rectangle plate = new Rectangle(x, y, width, height);
                             imageCrop = img.Clone();
                             imageCrop.ROI = plate;
                             PlateImagesList.Add(imageCrop);
                         }
                     }
                 }
-                //Kiểm tra kết quả các ảnh đã detect được
+
+                //Đưa ra kết quả các ảnh đã detect được
+
                 if (PlateImagesList.Count > 0)
                 {
                     string temp = String.Empty;
                     for (int i = 0; i < PlateImagesList.Count; i++)
                     {
+                        PlateImagesList[i] = rotateImage(PlateImagesList[i]);
                         ocrResult = engine.DetectText(PlateImagesList[i].ToBitmap());
+                        //ocrResultGray = engine.DetectText(PlateImagesList[i].Convert<Gray, byte>().ToBitmap());
+                        //ocrResult = ocrResult.Text.Length < ocrResultGray.Text.Length ? ocrResultGray : ocrResult;
                         List<string> arrayresult = new List<string>();
-                        if (ocrResult.Text.Length > temp.Length && ocrResult.Text != String.Empty)
+                        // Do dai toi da cua bien co the chua la 12 ky tu(bao gom ca cac ky tu "-" hoặc ".")
+                        if (ocrResult.Text.Length > temp.Length && ocrResult.Text != String.Empty && ocrResult.Text.Length <= 12)
                         {
                             temp = ocrResult.Text;
+                            double accuracy = 1;
                             for (int j = 0; j < ocrResult.TextBlocks.Count; j++)
                             {
                                 string TextBlocksPlate = ocrResult.TextBlocks[j].Text;
-                                TextBlocksPlate = Regex.Replace(TextBlocksPlate, @"[^0-9A-Z]", "");
+                                TextBlocksPlate = Regex.Replace(TextBlocksPlate, @"[^0-9A-Z\-]", "");
+                                TextBlocksPlate = Regex.Replace(TextBlocksPlate, "^-|-$", "");
                                 if (isValidPlatesNumber(TextBlocksPlate))
                                 {
+                                    if (ocrResult.TextBlocks[j].Score < accuracy)
+                                    {
+                                        accuracy = Math.Round(ocrResult.TextBlocks[j].Score, 2);
+                                    }
                                     arrayresult.Add(TextBlocksPlate);
                                 }
                             }
                             if (arrayresult.Count != 0)
                             {
                                 textPlates = string.Join("-", arrayresult);
-                                CvInvoke.Imwrite("imgcropColor.jpg", PlateImagesList[i]);                               
+                                CvInvoke.Imwrite("imgcropColor.jpg", PlateImagesList[i]);
                                 LPReturn obj = new LPReturn();
-                                result = obj.Result(textPlates, true);                               
+                                result = obj.Result(textPlates, true, accuracy);
                             }
                             else
                             {
                                 LPReturn obj = new LPReturn();
-                                result = obj.Result("Null", false);                                
+                                result = obj.Result("Null", false, 0);
                             }
                         }
                     }
@@ -144,7 +163,7 @@ namespace TD.VLPR
                 else
                 {
                     LPReturn obj = new LPReturn();
-                    result = obj.Result("No license plate found", false);
+                    result = obj.Result("No license plate found", false, 0);
                 }
             }
             catch (Exception ex)
@@ -155,19 +174,28 @@ namespace TD.VLPR
         }
         public ResultLP ProcessImage(string path)
         {
+            ResultLP result = new ResultLP();
             try
             {
                 string textPlates = string.Empty;
-                float confThreshold = 0.8f;
-                int imgDefaultSizeH = 416;//Kich thuoc Height dau vao
-                int imgDefaultSizeW = 416;//Kich thuoc Weight dau vao
-                //Detect biển số xe                
-                var img = new Image<Bgr, byte>(path).Resize(imgDefaultSizeW, imgDefaultSizeH, Inter.Cubic);
-                var input = DnnInvoke.BlobFromImage(img, 1 / 255.0, swapRB: false);
+                float confThreshold = 0.8f;// Ngưỡng tin cậy
+
+                //Thay đổi kích thước ảnh
+                
+                var img = new Image<Bgr, byte>(path);
+                if (img.Width % 32 != 0 || img.Height % 32 != 0)
+                {
+                    int imgDefaultSizeW = img.Width / 32 * 32;
+                    int imgDefaultSizeH = img.Height / 32 * 32;
+                    img = img.Resize(imgDefaultSizeW, imgDefaultSizeH, Inter.Cubic);
+                }
+                //Đưa ra kết quả từ mô hình
+
+
+                var input = DnnInvoke.BlobFromImage(img, 1 / 255.0, swapRB: true);
                 Model.SetInput(input);
                 VectorOfMat vectorOfMat = new VectorOfMat();
                 Model.Forward(vectorOfMat, Model.UnconnectedOutLayersNames);
-                VectorOfRect bboxes = new VectorOfRect();
                 Image<Bgr, byte> imageCrop = img.Clone();
                 List<Image<Bgr, byte>> PlateImagesList = new List<Image<Bgr, byte>>();
                 for (int k = 0; k < vectorOfMat.Size; k++)
@@ -191,30 +219,42 @@ namespace TD.VLPR
 
                             var x = (int)(center_x - (width / 2));
                             var y = (int)(center_y - (height / 2));
-                            Rectangle plate = new Rectangle(x - 5, y - 5, width + 10, height + 10);
+                            Rectangle plate = new Rectangle(x, y, width, height);
                             imageCrop = img.Clone();
                             imageCrop.ROI = plate;
                             PlateImagesList.Add(imageCrop);
                         }
                     }
                 }
-                //Kiểm tra kết quả các ảnh đã detect được
+
+                //Đưa ra kết quả các ảnh đã detect được
+
                 if (PlateImagesList.Count > 0)
                 {
                     string temp = String.Empty;
                     for (int i = 0; i < PlateImagesList.Count; i++)
                     {
+                        PlateImagesList[i] = rotateImage(PlateImagesList[i]);
                         ocrResult = engine.DetectText(PlateImagesList[i].ToBitmap());
+                        //ocrResultGray = engine.DetectText(PlateImagesList[i].Convert<Gray, byte>().ToBitmap());
+                        //ocrResult = ocrResult.Text.Length < ocrResultGray.Text.Length ? ocrResultGray : ocrResult;
                         List<string> arrayresult = new List<string>();
-                        if (ocrResult.Text.Length > temp.Length && ocrResult.Text != String.Empty)
+                        // Do dai toi da cua bien co the chua la 12 ky tu(bao gom ca cac ky tu "-" hoặc ".")
+                        if (ocrResult.Text.Length > temp.Length && ocrResult.Text != String.Empty && ocrResult.Text.Length <= 12)
                         {
                             temp = ocrResult.Text;
+                            double accuracy = 1;
                             for (int j = 0; j < ocrResult.TextBlocks.Count; j++)
                             {
                                 string TextBlocksPlate = ocrResult.TextBlocks[j].Text;
-                                TextBlocksPlate = Regex.Replace(TextBlocksPlate, @"[^0-9A-Z]", "");
+                                TextBlocksPlate = Regex.Replace(TextBlocksPlate, @"[^0-9A-Z\-]", "");
+                                TextBlocksPlate = Regex.Replace(TextBlocksPlate, "^-|-$", "");
                                 if (isValidPlatesNumber(TextBlocksPlate))
                                 {
+                                    if (ocrResult.TextBlocks[j].Score < accuracy)
+                                    {
+                                        accuracy = Math.Round(ocrResult.TextBlocks[j].Score, 2);
+                                    }
                                     arrayresult.Add(TextBlocksPlate);
                                 }
                             }
@@ -223,12 +263,12 @@ namespace TD.VLPR
                                 textPlates = string.Join("-", arrayresult);
                                 CvInvoke.Imwrite("imgcropColor.jpg", PlateImagesList[i]);
                                 LPReturn obj = new LPReturn();
-                                result = obj.Result(textPlates, true);
+                                result = obj.Result(textPlates, true, accuracy);
                             }
                             else
                             {
                                 LPReturn obj = new LPReturn();
-                                result = obj.Result("Null", false);
+                                result = obj.Result("Null", false, 0);
                             }
                         }
                     }
@@ -236,7 +276,7 @@ namespace TD.VLPR
                 else
                 {
                     LPReturn obj = new LPReturn();
-                    result = obj.Result("No license plate found", false);
+                    result = obj.Result("No license plate found", false, 0);
                 }
             }
             catch (Exception ex)
@@ -251,16 +291,46 @@ namespace TD.VLPR
             Model = DnnInvoke.ReadNetFromDarknet(PathConfig, PathWeights);
             Model.SetPreferableBackend(Emgu.CV.Dnn.Backend.OpenCV);
             Model.SetPreferableTarget(Target.Cpu);
+            
+            //Load library paddleOCR
             engine = new PaddleOCREngine(config, oCRParameter);
         }
         public static bool isValidPlatesNumber(string inputPlatesNumber)
         {
-            string strRegex = @"(^[A-Z0-9]{2,3}-?[A-Z0-9]{0,3}$)|(^[0-9]{4,5}$)|(^[0-9]{2}[A-Z]{1,2}-?[0-9]{4,5}$)|(^[A-Z]{2}-?[0-9]{2}-?[0-9]{2}$)|(^[A-Z0-9]{2}-?[A-Z0-9]{2,3}-?[A-Z0-9]{2,3}-?[0-9]{2}$)";
+            string strRegex = @"(^[0-9]{2}-?[0-9A-Z]{1,3}$)|(^[A-Z0-9]{2,5}$)|(^[0-9]{2,3}-[0,9]{2}$)|(^[A-Z0-9]{2,3}-?[0-9]{4,5}$)|(^[A-Z]{2}-?[0-9]{0,4}$)|(^[0-9]{2}-?[A-Z0-9]{2,3}-?[A-Z0-9]{2,3}-?[0-9]{2}$)|(^[A-Z]{2}-?[0-9]{2}-?[0-9]{2}$)|(^[0-9]{3}-?[A-Z0-9]{2}$)";
             Regex re = new Regex(strRegex);
             if (re.IsMatch(inputPlatesNumber))
                 return (true);
             else
                 return (false);
+        }
+        public static Image<Bgr, byte> rotateImage(Image<Bgr, byte> img)
+        {
+            var SE = Mat.Ones(1, 1, DepthType.Cv8U, 1);//adjust
+            var binary = img.Convert<Gray, byte>()
+                .SmoothGaussian(3)
+                .ThresholdBinary(new Gray(100), new Gray(255))
+                .MorphologyEx(MorphOp.Dilate, SE, new Point(-1, -1), 1, BorderType.Default, new MCvScalar(0))
+                .Erode(1);
+            var points = new VectorOfPoint();
+            var rotatedImage = img.Clone();
+            CvInvoke.FindNonZero(binary, points);
+            if (points.Length > 0)
+            {
+                double temp = 0.0;
+                var minAreaRect = CvInvoke.MinAreaRect(points);
+                Console.WriteLine(minAreaRect.Angle);
+                var rotationMatrix = new Mat(2, 3, DepthType.Cv32F, 1);
+                if (minAreaRect.Angle > temp)
+                {
+                    temp = minAreaRect.Angle;
+                    double angle = temp < 45 ? temp : temp - 90;
+                    CvInvoke.GetRotationMatrix2D(minAreaRect.Center, angle, 1.0, rotationMatrix);
+                    CvInvoke.WarpAffine(img, rotatedImage, rotationMatrix, img.Size, borderMode: BorderType.Replicate);
+                }
+            }
+            return rotatedImage;
+
         }
     }
 
@@ -269,23 +339,28 @@ namespace TD.VLPR
         /// <summary>
         /// Thông tin biển số xe
         /// </summary>
-        public string LP { get; set; }
+        public string textPlate { get; set; }
         /// <summary>
         /// 0 : Thành công
         /// 1 : Không nhận diện được hoặc nhận diện sai
         /// </summary>
-        public int statusLP { get; set; }
+        public int statusPlate { get; set; }
+        /// <summary>
+        /// Độ chính xác nhận dạng biển số xe
+        /// </summary>
+        public double accPlate { get; set; }
     }
 
     public class LPReturn
     {
         // Create a class result for ResultLP.
-        public ResultLP Result(string LP, bool statusLP)
+        public ResultLP Result(string textPlate, bool statusPlate, double accPlate)
         {
             ResultLP result = new ResultLP();
-            result.LP = LP;
-            if (statusLP) result.statusLP = 0;
-            else result.statusLP = 1;
+            result.textPlate = textPlate;
+            if (statusPlate) result.statusPlate = 0;
+            else result.statusPlate = 1;
+            result.accPlate = accPlate;
             return result;
         }
     }

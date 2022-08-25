@@ -17,8 +17,6 @@ using System.IO;
 using System.Diagnostics;
 using PaddleOCRSharp;
 using System.Text.RegularExpressions;
-using System.Drawing.Drawing2D;
-using TensorFlow;
 
 namespace Vietnamese_License_Plate_Recognition
 {
@@ -30,6 +28,7 @@ namespace Vietnamese_License_Plate_Recognition
         OCRModelConfig config = null;
         OCRParameter oCRParameter = new OCRParameter();
         OCRResult ocrResult = new OCRResult();
+        OCRResult ocrResultGray = new OCRResult();
         PaddleOCREngine engine = null;
         //Net mobile_net = DnnInvoke.ReadNetFromTensorflow("saved_model.pb", "label_map.pbtxt");
         public Form1()
@@ -93,19 +92,21 @@ namespace Vietnamese_License_Plate_Recognition
         {
                 string textPlates = "";
                 float confThreshold = 0.8f;
-                int imgDefaultSizeH = 0;//Kich thuoc default Height dau vao
-                int imgDefaultSizeW = 0;//Kich thuoc default Weight dau vao
-                //Thay đổi kich thước ảnh đầu vào           
+
+                //Thay đổi kich thước ảnh đầu vào
+
                 var img = new Image<Bgr, byte>(path);             
                 //img = ResizeImage(img, 1280,0);
                 if (img.Width % 32 != 0 || img.Height % 32 != 0)
                 {
-                    imgDefaultSizeW = img.Width / 32 * 32;
-                    imgDefaultSizeH = img.Height / 32 * 32;
+                    int imgDefaultSizeW = img.Width / 32 * 32;
+                    int imgDefaultSizeH = img.Height / 32 * 32;
                     img = img.Resize(imgDefaultSizeW, imgDefaultSizeH, Inter.Cubic);
                 }
                 label6.Text = path;
+
                 //Dự đoán vùng chứa biển số
+
                 var input = DnnInvoke.BlobFromImage(img, 1 / 255.0, swapRB: true);
                 Model.SetInput(input);
                 VectorOfMat vectorOfMat = new VectorOfMat();
@@ -140,22 +141,18 @@ namespace Vietnamese_License_Plate_Recognition
                         }
                     }
                 }
-                //Kiểm tra kết quả các ảnh đã detect được
+
+                //Đưa ra kết quả các ảnh đã detect được
+
                 if (PlateImagesList.Count > 0)
                 {
                     string temp = String.Empty;                    
                     for (int i = 0; i < PlateImagesList.Count; i++)
                     {
-                    //Bitmap rotate_image = rotateImage(PlateImagesList[i].ToBitmap(), 8.5);
-                    //PlateImagesList[i] = PlateImagesList[i].Rotate(7.25, new Bgr(43, 40, 33));
-                    //CvInvoke.Imshow("gray", PlateImagesList[i].Mat);
-                    //CvInvoke.WaitKey();
-                    //var imgGray = rotate_image.ToImage<Gray, byte>().Convert<Gray, byte>().Clone();
-                    //Image<Gray, byte> output_image = imgGray.SmoothGaussian(5);
-                    //CvInvoke.Imshow("gray", output_image.Mat);
-                    //CvInvoke.WaitKey();
-                        //findLineImage(PlateImagesList[i]);
+                        PlateImagesList[i] = rotateImage(PlateImagesList[i]);
                         ocrResult = engine.DetectText(PlateImagesList[i].ToBitmap());
+                        //ocrResultGray = engine.DetectText(PlateImagesList[i].Convert<Gray,byte>().ToBitmap());
+                        //ocrResult = ocrResult.Text.Length < ocrResultGray.Text.Length ? ocrResultGray : ocrResult;
                         List<string> arrayresult = new List<string>();
                         // Do dai toi da cua bien co the chua la 12 ky tu(bao gom ca cac ky tu "-" hoặc ".")
                         if (ocrResult.Text.Length > temp.Length && ocrResult.Text != String.Empty && ocrResult.Text.Length <= 12)
@@ -166,7 +163,8 @@ namespace Vietnamese_License_Plate_Recognition
                             {
                                 string TextBlocksPlate = ocrResult.TextBlocks[j].Text;
                                 TextBlocksPlate = Regex.Replace(TextBlocksPlate, @"[^0-9A-Z\-]", "");
-                                if (isValidPlatesNumberForm(TextBlocksPlate))
+                                TextBlocksPlate = Regex.Replace(TextBlocksPlate, "^-|-$", "");
+                            if (isValidPlatesNumberForm(TextBlocksPlate))
                                 {
                                     if(ocrResult.TextBlocks[j].Score < accuracy)
                                     {
@@ -192,7 +190,7 @@ namespace Vietnamese_License_Plate_Recognition
                                 ResultLPForm resultobj = obj.Result("Null", false,0);
                                 label2.Text = "Biển số: " + resultobj.textPlate + ", status: " + resultobj.statusPlate + ", acc: " + resultobj.accPlate;
                             }
-                        }
+                        }  
                     }
                 }
                 else
@@ -220,7 +218,7 @@ namespace Vietnamese_License_Plate_Recognition
         // method containing the regex
         public static bool isValidPlatesNumberForm(string inputPlatesNumber)
         {
-            string strRegex = @"(^[0-9]{2}-?[A-Z0-9]{1,3}$)|(^[0-9]{2,5}$)|(^[0-9]{2,3}-[0,9]{2}$)|(^[A-Z0-9]{2,3}-?[0-9]{4,5}$)|(^[A-Z]{2}-?[0-9]{0,4}$)|(^[0-9]{2}-?[A-Z0-9]{2,3}-?[A-Z0-9]{2,3}-?[0-9]{2}$)|(^[A-Z]{2}-?[0-9]{2}-?[0-9]{2}$)|(^[0-9]{3}-?[A-Z0-9]{2}$)";
+            string strRegex = @"(^[0-9]{2}-?[0-9A-Z]{1,3}$)|(^[A-Z0-9]{2,5}$)|(^[0-9]{2,3}-[0,9]{2}$)|(^[A-Z0-9]{2,3}-?[0-9]{4,5}$)|(^[A-Z]{2}-?[0-9]{0,4}$)|(^[0-9]{2}-?[A-Z0-9]{2,3}-?[A-Z0-9]{2,3}-?[0-9]{2}$)|(^[A-Z]{2}-?[0-9]{2}-?[0-9]{2}$)|(^[0-9]{3}-?[A-Z0-9]{2}$)";
             Regex re = new Regex(strRegex);
             if (re.IsMatch(inputPlatesNumber))
                 return (true);
@@ -271,20 +269,32 @@ namespace Vietnamese_License_Plate_Recognition
             Image<Bgr, byte> imageReszie = imageOriginal.Resize(dim.Width, dim.Height, Inter.Cubic);
             return imageReszie;
         }
-        public static void findLineImage(Image<Bgr, byte> img)
+        public static Image<Bgr, byte> rotateImage(Image<Bgr, byte> img)
         {
-            Image<Gray, byte> gray_image = img.Convert<Gray, byte>();
-            Image<Gray, byte> img_canny = new Image<Gray, byte>(img.Width, img.Height);
-            CvInvoke.WaitKey();
-            CvInvoke.Canny(gray_image, img_canny, 30, 100, apertureSize: 3);
-            //CvInvoke.MedianBlur(gray_image, gray_image, 3);
-            CvInvoke.Imshow("img", img_canny.Mat);
-            CvInvoke.WaitKey();
-            LineSegment2D[] array = CvInvoke.HoughLinesP(img_canny, 1, Math.PI / 180, 100, minLineLength: img.Width/4, maxGap: img.Height/4);
-            Console.WriteLine(array[0]);
-            //double angle = 0;
-            //int nline = lines.Length;
-      
+            var SE = Mat.Ones(1, 1, DepthType.Cv8U, 1);//adjust
+            var binary = img.Convert<Gray, byte>()
+                .SmoothGaussian(3)
+                .ThresholdBinary(new Gray(100), new Gray(255))
+                .MorphologyEx(MorphOp.Dilate, SE, new Point(-1, -1), 1, BorderType.Default, new MCvScalar(0))
+                .Erode(1);
+            var points = new VectorOfPoint();
+            var rotatedImage = img.Clone();
+            CvInvoke.FindNonZero(binary, points);
+            if (points.Length > 0)
+            {
+                double temp = 0.0;
+                var minAreaRect = CvInvoke.MinAreaRect(points);
+                Console.WriteLine(minAreaRect.Angle);
+                var rotationMatrix = new Mat(2, 3, DepthType.Cv32F, 1);
+                if(minAreaRect.Angle > temp)
+                {
+                    temp = minAreaRect.Angle;
+                    double angle = temp < 45 ? temp : temp - 90;
+                    CvInvoke.GetRotationMatrix2D(minAreaRect.Center, angle, 1.0, rotationMatrix);
+                    CvInvoke.WarpAffine(img, rotatedImage, rotationMatrix, img.Size, borderMode: BorderType.Replicate);
+                }
+            }
+            return rotatedImage;  
         }
 
     }

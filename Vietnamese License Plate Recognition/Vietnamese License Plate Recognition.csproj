@@ -142,9 +142,6 @@
     <PackageReference Include="PaddleOCRSharp">
       <Version>2.0.3</Version>
     </PackageReference>
-    <PackageReference Include="TensorFlowSharp">
-      <Version>1.15.1</Version>
-    </PackageReference>
   </ItemGroup>
   <ItemGroup>
     <BootstrapperPackage Include=".NETFramework,Version=v4.7.1">
