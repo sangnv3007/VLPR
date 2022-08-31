@@ -31,19 +31,20 @@ namespace Vietnamese_License_Plate_Recognition
             ///Run Console Command
             ///</summary>
             //var extracter = new NumberPlateExtracter();
-            //foreach (string file in Directory.EnumerateFiles(@"D:\Download Chorme\Thang8\Thang_8\Test", "*.jpg"))
+            //foreach (string file in Directory.EnumerateFiles(@"D:\Download Chorme\Thang8\Thang_8\DataTrain02", "*.jpg"))
             //{
             //    ResultLP resultobj = extracter.ProcessImage(file);
-            //    string results = file +"\t"+ resultobj.textPlate + "\t"+ resultobj.accPlate;
+            //    string results = file + "\t" + resultobj.textPlate + "\t" + resultobj.accPlate;
             //    File.AppendAllText("Result.txt", results + "\n");
             //}
+
             var extracter = new NumberPlateExtracter();
-            string path = @"D:\Download Chorme\Thang8\Thang_8\Test\LP (266).jpg";
+            string path = @"D:\Download Chorme\Thang8\Thang_8\2022_08_24\LanVao_1\20220824_064503.637969203052202361.1.AnhBienSo.jpg";
             var img = new Image<Bgr, byte>(path);
             //Thời gian bắt đầu
             Stopwatch swObj = new Stopwatch();
             swObj.Start();
-            ResultLP resultobj = extracter.ProcessImage(path);
+            ResultLP resultobj = extracter.ProcessImage(img.Mat);
             //Thời gian kết thúc
             swObj.Stop();
             //Tổng thời gian thực hiện               

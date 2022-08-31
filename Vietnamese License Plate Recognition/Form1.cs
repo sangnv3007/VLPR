@@ -24,13 +24,16 @@ namespace Vietnamese_License_Plate_Recognition
     {
         Net Model = null;
         string PathConfig = "yolov4-tiny-custom.cfg";
-        string PathWeights = "yolov4-tiny-custom_final.weights";
-        OCRModelConfig config = null;
+        string PathWeights = "yolov4-tiny-custom_final.weights";          
         OCRParameter oCRParameter = new OCRParameter();
+        OCRModelConfig config = new OCRModelConfig();
         OCRResult ocrResult = new OCRResult();
         OCRResult ocrResultGray = new OCRResult();
         PaddleOCREngine engine = null;
-        //Net mobile_net = DnnInvoke.ReadNetFromTensorflow("saved_model.pb", "label_map.pbtxt");
+        //Test Original PaddleOCR
+        OCRParameter oCRParameterOCR = new OCRParameter();
+        OCRResult ocrResultOCR = new OCRResult();
+        PaddleOCREngine engineOCR = null;
         public Form1()
         {
             InitializeComponent();
@@ -89,14 +92,14 @@ namespace Vietnamese_License_Plate_Recognition
         }
         //Hàm xử lý biển số xe        
         public void ProcessImage(string path)
-        {
+        {               
                 string textPlates = "";
                 float confThreshold = 0.8f;
 
                 //Thay đổi kich thước ảnh đầu vào
 
-                var img = new Image<Bgr, byte>(path);             
-                //img = ResizeImage(img, 1280,0);
+                var img = new Image<Bgr, byte>(path);
+                //img = ResizeImage(img, 1280, 0);
                 if (img.Width % 32 != 0 || img.Height % 32 != 0)
                 {
                     int imgDefaultSizeW = img.Width / 32 * 32;
@@ -134,7 +137,7 @@ namespace Vietnamese_License_Plate_Recognition
 
                             var x = (int)(center_x - (width / 2));
                             var y = (int)(center_y - (height / 2));
-                            Rectangle plate = new Rectangle(x, y, width, height);
+                            Rectangle plate = new Rectangle(x - 5 , y - 5 , width + 10, height +10);
                             imageCrop = img.Clone();
                             imageCrop.ROI = plate;
                             PlateImagesList.Add(imageCrop);
@@ -149,10 +152,30 @@ namespace Vietnamese_License_Plate_Recognition
                     string temp = String.Empty;                    
                     for (int i = 0; i < PlateImagesList.Count; i++)
                     {
-                        PlateImagesList[i] = rotateImage(PlateImagesList[i]);
+                        //PlateImagesList[i] = rotateImage(PlateImagesList[i]);
                         ocrResult = engine.DetectText(PlateImagesList[i].ToBitmap());
-                        //ocrResultGray = engine.DetectText(PlateImagesList[i].Convert<Gray,byte>().ToBitmap());
+                        //ocrResultGray = engine.DetectText(PlateImagesList[i].Convert<Gray,byte>().ToBitmap());                        
                         //ocrResult = ocrResult.Text.Length < ocrResultGray.Text.Length ? ocrResultGray : ocrResult;
+                        //if (ocrResult.Text.Length == ocrResultGray.Text.Length && ocrResult.Text != ocrResultGray.Text)
+                        //{
+                        //    double minOCRResult = ocrResult.TextBlocks[0].Score;
+                        //    double minOCRResultGray = ocrResultGray.TextBlocks[0].Score;
+                        //    for (int j = 1; j < ocrResult.TextBlocks.Count; j++)
+                        //    {
+                        //        if (ocrResult.TextBlocks[j].Score < minOCRResult)
+                        //        {
+                        //            minOCRResult = ocrResult.TextBlocks[j].Score;
+                        //        }
+                        //    }    
+                        //    for(int k = 1; k < ocrResultGray.TextBlocks.Count; k++)
+                        //    {
+                        //        if (ocrResult.TextBlocks[k].Score < minOCRResultGray)
+                        //        {
+                        //            minOCRResultGray = ocrResult.TextBlocks[k].Score;
+                        //        }
+                        //    }
+                        //    ocrResult = minOCRResult < minOCRResultGray ? ocrResultGray : ocrResult;
+                        //}
                         List<string> arrayresult = new List<string>();
                         // Do dai toi da cua bien co the chua la 12 ky tu(bao gom ca cac ky tu "-" hoặc ".")
                         if (ocrResult.Text.Length > temp.Length && ocrResult.Text != String.Empty && ocrResult.Text.Length <= 12)
@@ -176,6 +199,8 @@ namespace Vietnamese_License_Plate_Recognition
                             if (arrayresult.Count != 0)
                             {
                                 textPlates = string.Join("-", arrayresult);
+                                ocrResultOCR = engineOCR.DetectText(PlateImagesList[i].ToBitmap());
+                                if (ocrResultOCR != null) Console.WriteLine(ocrResultOCR.Text);
                                 CvInvoke.Imwrite("imgcropColor.jpg", PlateImagesList[i]);
                                 pictureBox3.Image = PlateImagesList[i].ToBitmap();
                                 textBox1.Text = textPlates;
@@ -213,12 +238,12 @@ namespace Vietnamese_License_Plate_Recognition
 
         private void Form1_Load(object sender, EventArgs e)
         {
-            LoadModelRecognize();
+            LoadModelRecognize();            
         }
         // method containing the regex
         public static bool isValidPlatesNumberForm(string inputPlatesNumber)
         {
-            string strRegex = @"(^[0-9]{2}-?[0-9A-Z]{1,3}$)|(^[A-Z0-9]{2,5}$)|(^[0-9]{2,3}-[0,9]{2}$)|(^[A-Z0-9]{2,3}-?[0-9]{4,5}$)|(^[A-Z]{2}-?[0-9]{0,4}$)|(^[0-9]{2}-?[A-Z0-9]{2,3}-?[A-Z0-9]{2,3}-?[0-9]{2}$)|(^[A-Z]{2}-?[0-9]{2}-?[0-9]{2}$)|(^[0-9]{3}-?[A-Z0-9]{2}$)";
+            string strRegex = @"(^[A-Z0-9]{2}-?[A-Z0-9]{1,3}$)|(^[A-Z0-9]{2,5}$)|(^[0-9]{2,3}-[0,9]{2}$)|(^[A-Z0-9]{2,3}-?[0-9]{4,5}$)|(^[A-Z]{2}-?[0-9]{0,4}$)|(^[0-9]{2}-?[A-Z0-9]{2,3}-?[A-Z0-9]{2,3}-?[0-9]{2}$)|(^[A-Z]{2}-?[0-9]{2}-?[0-9]{2}$)|(^[0-9]{3}-?[A-Z0-9]{2}$)";
             Regex re = new Regex(strRegex);
             if (re.IsMatch(inputPlatesNumber))
                 return (true);
@@ -230,9 +255,17 @@ namespace Vietnamese_License_Plate_Recognition
             try
             {
                 Model = DnnInvoke.ReadNetFromDarknet(PathConfig, PathWeights);//Load model detect LP
-                //Model.SetPreferableBackend(Emgu.CV.Dnn.Backend.OpenCV);
-                //Model.SetPreferableTarget(Target.Cpu);
+                Model.SetPreferableBackend(Emgu.CV.Dnn.Backend.OpenCV);
+                Model.SetPreferableTarget(Target.Cpu);              
+                string root = Environment.CurrentDirectory;
+                string modelPathroot = root + @"\en";
+                config.det_infer = modelPathroot + @"\ch_ppocr_server_v2.0_det_infer";
+                config.cls_infer = modelPathroot + @"\ch_ppocr_mobile_v2.0_cls_infer";
+                config.rec_infer = modelPathroot + @"\ch_ppocr_server_v2.0_rec_infer";
+                config.keys = modelPathroot + @"\en_dict.txt";
                 engine = new PaddleOCREngine(config, oCRParameter);
+                //
+                engineOCR = new PaddleOCREngine(null, oCRParameterOCR);
             }
             catch (Exception ex)
             {
@@ -284,7 +317,7 @@ namespace Vietnamese_License_Plate_Recognition
             {
                 double temp = 0.0;
                 var minAreaRect = CvInvoke.MinAreaRect(points);
-                Console.WriteLine(minAreaRect.Angle);
+                //Console.WriteLine(minAreaRect.Angle);
                 var rotationMatrix = new Mat(2, 3, DepthType.Cv32F, 1);
                 if(minAreaRect.Angle > temp)
                 {
@@ -295,8 +328,7 @@ namespace Vietnamese_License_Plate_Recognition
                 }
             }
             return rotatedImage;  
-        }
-
+        }   
     }
     public class ResultLPForm
     {

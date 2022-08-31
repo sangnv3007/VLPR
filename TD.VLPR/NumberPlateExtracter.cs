@@ -23,10 +23,9 @@ namespace TD.VLPR
         private string PathWeights;
         //dynamic func;
         Net Model = null;
-        OCRModelConfig config = null;
+        OCRModelConfig config = new OCRModelConfig();
         OCRParameter oCRParameter = new OCRParameter();
         OCRResult ocrResult = new OCRResult();
-        OCRResult ocrResultGray = new OCRResult();
         PaddleOCREngine engine = null;
         public NumberPlateExtracter(
             string pathConfig = "yolov4-tiny-custom.cfg",
@@ -120,11 +119,8 @@ namespace TD.VLPR
                 {
                     string temp = String.Empty;
                     for (int i = 0; i < PlateImagesList.Count; i++)
-                    {
-                        PlateImagesList[i] = rotateImage(PlateImagesList[i]);
-                        ocrResult = engine.DetectText(PlateImagesList[i].ToBitmap());
-                        //ocrResultGray = engine.DetectText(PlateImagesList[i].Convert<Gray, byte>().ToBitmap());
-                        //ocrResult = ocrResult.Text.Length < ocrResultGray.Text.Length ? ocrResultGray : ocrResult;
+                    {                      
+                        ocrResult = engine.DetectText(PlateImagesList[i].ToBitmap());                     
                         List<string> arrayresult = new List<string>();
                         // Do dai toi da cua bien co the chua la 12 ky tu(bao gom ca cac ky tu "-" hoặc ".")
                         if (ocrResult.Text.Length > temp.Length && ocrResult.Text != String.Empty && ocrResult.Text.Length <= 12)
@@ -233,11 +229,8 @@ namespace TD.VLPR
                 {
                     string temp = String.Empty;
                     for (int i = 0; i < PlateImagesList.Count; i++)
-                    {
-                        PlateImagesList[i] = rotateImage(PlateImagesList[i]);
-                        ocrResult = engine.DetectText(PlateImagesList[i].ToBitmap());
-                        //ocrResultGray = engine.DetectText(PlateImagesList[i].Convert<Gray, byte>().ToBitmap());
-                        //ocrResult = ocrResult.Text.Length < ocrResultGray.Text.Length ? ocrResultGray : ocrResult;
+                    {                       
+                        ocrResult = engine.DetectText(PlateImagesList[i].ToBitmap());                      
                         List<string> arrayresult = new List<string>();
                         // Do dai toi da cua bien co the chua la 12 ky tu(bao gom ca cac ky tu "-" hoặc ".")
                         if (ocrResult.Text.Length > temp.Length && ocrResult.Text != String.Empty && ocrResult.Text.Length <= 12)
@@ -261,6 +254,7 @@ namespace TD.VLPR
                             if (arrayresult.Count != 0)
                             {
                                 textPlates = string.Join("-", arrayresult);
+                                //CvInvoke.Imwrite(@"D:\PaddleOCR\Recognition PaddleOCR\CropLP\imgcropColor" + textPlates + ".jpg", PlateImagesList[i]);
                                 CvInvoke.Imwrite("imgcropColor.jpg", PlateImagesList[i]);
                                 LPReturn obj = new LPReturn();
                                 result = obj.Result(textPlates, true, accuracy);
@@ -291,7 +285,12 @@ namespace TD.VLPR
             Model = DnnInvoke.ReadNetFromDarknet(PathConfig, PathWeights);
             Model.SetPreferableBackend(Emgu.CV.Dnn.Backend.OpenCV);
             Model.SetPreferableTarget(Target.Cpu);
-            
+            string root = Environment.CurrentDirectory;
+            string modelPathroot = root + @"\en";
+            config.det_infer = modelPathroot + @"\ch_ppocr_server_v2.0_det_infer";
+            config.cls_infer = modelPathroot + @"\ch_ppocr_mobile_v2.0_cls_infer";
+            config.rec_infer = modelPathroot + @"\ch_ppocr_server_v2.0_rec_infer";
+            config.keys = modelPathroot + @"\en_dict.txt";
             //Load library paddleOCR
             engine = new PaddleOCREngine(config, oCRParameter);
         }
@@ -303,34 +302,6 @@ namespace TD.VLPR
                 return (true);
             else
                 return (false);
-        }
-        public static Image<Bgr, byte> rotateImage(Image<Bgr, byte> img)
-        {
-            var SE = Mat.Ones(1, 1, DepthType.Cv8U, 1);//adjust
-            var binary = img.Convert<Gray, byte>()
-                .SmoothGaussian(3)
-                .ThresholdBinary(new Gray(100), new Gray(255))
-                .MorphologyEx(MorphOp.Dilate, SE, new Point(-1, -1), 1, BorderType.Default, new MCvScalar(0))
-                .Erode(1);
-            var points = new VectorOfPoint();
-            var rotatedImage = img.Clone();
-            CvInvoke.FindNonZero(binary, points);
-            if (points.Length > 0)
-            {
-                double temp = 0.0;
-                var minAreaRect = CvInvoke.MinAreaRect(points);
-                Console.WriteLine(minAreaRect.Angle);
-                var rotationMatrix = new Mat(2, 3, DepthType.Cv32F, 1);
-                if (minAreaRect.Angle > temp)
-                {
-                    temp = minAreaRect.Angle;
-                    double angle = temp < 45 ? temp : temp - 90;
-                    CvInvoke.GetRotationMatrix2D(minAreaRect.Center, angle, 1.0, rotationMatrix);
-                    CvInvoke.WarpAffine(img, rotatedImage, rotationMatrix, img.Size, borderMode: BorderType.Replicate);
-                }
-            }
-            return rotatedImage;
-
         }
     }
 
