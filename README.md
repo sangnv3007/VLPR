@@ -28,8 +28,8 @@ Hiện tại chương trình vẫn chưa hoàn thiện, thuật toán nhận d�
 
 Dowload 2 file trong thư mục [backup](https://drive.google.com/drive/folders/1YROQ6bVRuFmmfAjJAS0O6tI85vbsYfxV?usp=sharing) và copy vào thư mục chạy dự án
 ```
-  yolov3.cf
-  yolov3_Final.weights
+  yolov4-tiny-custom.cfg
+  yolov4-tiny-custom_final.weights
 ```
 
 
