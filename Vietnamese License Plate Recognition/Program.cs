@@ -23,9 +23,9 @@ namespace Vietnamese_License_Plate_Recognition
             ///Run Apllication Form
             ///</summary>
             ///
-            //Application.EnableVisualStyles();
-            //Application.SetCompatibleTextRenderingDefault(false);
-            //Application.Run(new Form1());
+            Application.EnableVisualStyles();
+            Application.SetCompatibleTextRenderingDefault(false);
+            Application.Run(new Form1());
 
             ///<summary>
             ///Run Console Command
@@ -38,20 +38,20 @@ namespace Vietnamese_License_Plate_Recognition
             //    File.AppendAllText("Result.txt", results + "\n");
             //}
 
-            var extracter = new NumberPlateExtracter();
-            string path = @"D:\Download Chorme\Thang8\Thang_8\2022_08_24\LanVao_1\20220824_064503.637969203052202361.1.AnhBienSo.jpg";
-            var img = new Image<Bgr, byte>(path);
-            //Thời gian bắt đầu
-            Stopwatch swObj = new Stopwatch();
-            swObj.Start();
-            ResultLP resultobj = extracter.ProcessImage(img.Mat);
-            //Thời gian kết thúc
-            swObj.Stop();
-            //Tổng thời gian thực hiện               
-            Console.WriteLine(Math.Round(swObj.Elapsed.TotalSeconds, 2).ToString() + " giây");
-            Console.WriteLine("TextPlate: {0}", resultobj.textPlate);
-            Console.WriteLine("Status: {0}", resultobj.statusPlate);
-            Console.WriteLine("Accuracy: {0}", resultobj.accPlate);
+            //var extracter = new NumberPlateExtracter();
+            //string path = @"D:\Download Chorme\Thang8\Thang_8\2022_08_24\LanVao_1\20220824_064503.637969203052202361.1.AnhBienSo.jpg";
+            //var img = new Image<Bgr, byte>(path);
+            ////Thời gian bắt đầu
+            //Stopwatch swObj = new Stopwatch();
+            //swObj.Start();
+            //ResultLP resultobj = extracter.ProcessImage(img.Mat);
+            ////Thời gian kết thúc
+            //swObj.Stop();
+            ////Tổng thời gian thực hiện               
+            //Console.WriteLine(Math.Round(swObj.Elapsed.TotalSeconds, 2).ToString() + " giây");
+            //Console.WriteLine("TextPlate: {0}", resultobj.textPlate);
+            //Console.WriteLine("Status: {0}", resultobj.statusPlate);
+            //Console.WriteLine("Accuracy: {0}", resultobj.accPlate);
         }
     }
 }

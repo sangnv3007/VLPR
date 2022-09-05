@@ -28,7 +28,7 @@ namespace Vietnamese_License_Plate_Recognition
         OCRParameter oCRParameter = new OCRParameter();
         OCRModelConfig config = new OCRModelConfig();
         OCRResult ocrResult = new OCRResult();
-        OCRResult ocrResultGray = new OCRResult();
+        //OCRResult ocrResultGray = new OCRResult();
         PaddleOCREngine engine = null;
         //Test Original PaddleOCR
         OCRParameter oCRParameterOCR = new OCRParameter();
@@ -149,52 +149,30 @@ namespace Vietnamese_License_Plate_Recognition
 
                 if (PlateImagesList.Count > 0)
                 {
-                    string temp = String.Empty;                    
+                    //string tempOCR = String.Empty;
+                    OCRResult tempOCRResult = new OCRResult();
                     for (int i = 0; i < PlateImagesList.Count; i++)
                     {
-                        //PlateImagesList[i] = rotateImage(PlateImagesList[i]);
-                        ocrResult = engine.DetectText(PlateImagesList[i].ToBitmap());
-                        //ocrResultGray = engine.DetectText(PlateImagesList[i].Convert<Gray,byte>().ToBitmap());                        
-                        //ocrResult = ocrResult.Text.Length < ocrResultGray.Text.Length ? ocrResultGray : ocrResult;
-                        //if (ocrResult.Text.Length == ocrResultGray.Text.Length && ocrResult.Text != ocrResultGray.Text)
-                        //{
-                        //    double minOCRResult = ocrResult.TextBlocks[0].Score;
-                        //    double minOCRResultGray = ocrResultGray.TextBlocks[0].Score;
-                        //    for (int j = 1; j < ocrResult.TextBlocks.Count; j++)
-                        //    {
-                        //        if (ocrResult.TextBlocks[j].Score < minOCRResult)
-                        //        {
-                        //            minOCRResult = ocrResult.TextBlocks[j].Score;
-                        //        }
-                        //    }    
-                        //    for(int k = 1; k < ocrResultGray.TextBlocks.Count; k++)
-                        //    {
-                        //        if (ocrResult.TextBlocks[k].Score < minOCRResultGray)
-                        //        {
-                        //            minOCRResultGray = ocrResult.TextBlocks[k].Score;
-                        //        }
-                        //    }
-                        //    ocrResult = minOCRResult < minOCRResultGray ? ocrResultGray : ocrResult;
-                        //}
+                        ocrResult = engine.DetectText(PlateImagesList[i].ToBitmap());                                            
                         List<string> arrayresult = new List<string>();
                         // Do dai toi da cua bien co the chua la 12 ky tu(bao gom ca cac ky tu "-" hoặc ".")
-                        if (ocrResult.Text.Length > temp.Length && ocrResult.Text != String.Empty && ocrResult.Text.Length <= 12)
-                        {
-                            temp = ocrResult.Text;
+                        if (ocrResult.Text.Length > tempOCRResult.Text.Length && ocrResult.Text != String.Empty && ocrResult.Text.Length <= 12)
+                         {
+                            tempOCRResult = ocrResult;
                             double accuracy = 1;
                             for (int j = 0; j < ocrResult.TextBlocks.Count; j++)
                             {
                                 string TextBlocksPlate = ocrResult.TextBlocks[j].Text;
                                 TextBlocksPlate = Regex.Replace(TextBlocksPlate, @"[^0-9A-Z\-]", "");
                                 TextBlocksPlate = Regex.Replace(TextBlocksPlate, "^-|-$", "");
-                            if (isValidPlatesNumberForm(TextBlocksPlate))
-                                {
-                                    if(ocrResult.TextBlocks[j].Score < accuracy)
+                                if (isValidPlatesNumberForm(TextBlocksPlate))
                                     {
-                                        accuracy = Math.Round(ocrResult.TextBlocks[j].Score, 2);
-                                    }    
-                                    arrayresult.Add(TextBlocksPlate);
-                                }
+                                        if(ocrResult.TextBlocks[j].Score < accuracy)
+                                        {
+                                            accuracy = Math.Round(ocrResult.TextBlocks[j].Score, 2);
+                                        }    
+                                        arrayresult.Add(TextBlocksPlate);
+                                    }
                             }
                             if (arrayresult.Count != 0)
                             {
@@ -215,7 +193,11 @@ namespace Vietnamese_License_Plate_Recognition
                                 ResultLPForm resultobj = obj.Result("Null", false,0);
                                 label2.Text = "Biển số: " + resultobj.textPlate + ", status: " + resultobj.statusPlate + ", acc: " + resultobj.accPlate;
                             }
-                        }  
+                        }
+                        else if (ocrResult.Text.Length == tempOCRResult.Text.Length && ocrResult.TextBlocks.Count == tempOCRResult.TextBlocks.Count)
+                        {
+                            
+                        }
                     }
                 }
                 else
