@@ -18,20 +18,26 @@ Hiện tại chương trình vẫn chưa hoàn thiện, thuật toán nhận d�
 * PaddleOCRSharp 2.0.3
 
 ### Hướng dẫn triển khai
-- Copy các dll sau trong thư mục `bin/Debug`(Hoặc tự cài trên Nuget Package) vào thư mục chạy dự án của bạn
-```
- Emgu.CV
- Emgu.CV.runtime.windows
- PaddleOCRSharp
- TD.VLPR // dll thư viện 
-```
-
 Dowload 2 file trong thư mục [backup](https://drive.google.com/drive/folders/1YROQ6bVRuFmmfAjJAS0O6tI85vbsYfxV?usp=sharing) và copy vào thư mục chạy dự án
 ```
   yolov4-tiny-custom.cfg
   yolov4-tiny-custom_final.weights
 ```
-
+Dowload thư mục [en](https://drive.google.com/drive/folders/1YROQ6bVRuFmmfAjJAS0O6tI85vbsYfxV?usp=sharing) và copy vào thư mục chạy dự án
+```
+en
+└───en_dict.txt
+|
+│     
+└───ch_ppocr_mobile_v2.0_cls_infer
+│   └── [...]
+│   
+└───ch_ppocr_server_v2.0_det_infer
+|   └── [...]
+│
+└───ch_ppocr_server_v2.0_rec_infer
+    └── [...] 
+```
 
 Lưu ý: Hiện tại vì là bản demo nên độ chính xác chưa cao nên chương trình còn một số hạn chế sau:
 - Nhận dạng đúng cho những biển số rõ ràng, dể nhìn
