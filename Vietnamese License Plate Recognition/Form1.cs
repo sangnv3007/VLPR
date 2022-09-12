@@ -28,12 +28,7 @@ namespace Vietnamese_License_Plate_Recognition
         OCRParameter oCRParameter = new OCRParameter();
         OCRModelConfig config = new OCRModelConfig();
         OCRResult ocrResult = new OCRResult();
-        //OCRResult ocrResultGray = new OCRResult();
         PaddleOCREngine engine = null;
-        //Test Original PaddleOCR
-        OCRParameter oCRParameterOCR = new OCRParameter();
-        OCRResult ocrResultOCR = new OCRResult();
-        PaddleOCREngine engineOCR = null;
         public Form1()
         {
             InitializeComponent();
@@ -99,7 +94,7 @@ namespace Vietnamese_License_Plate_Recognition
                 //Thay đổi kich thước ảnh đầu vào
 
                 var img = new Image<Bgr, byte>(path);
-                //img = ResizeImage(img, 1280, 0);
+                img = ResizeImage(img, 1280, 0);
                 if (img.Width % 32 != 0 || img.Height % 32 != 0)
                 {
                     int imgDefaultSizeW = img.Width / 32 * 32;
@@ -137,7 +132,7 @@ namespace Vietnamese_License_Plate_Recognition
 
                             var x = (int)(center_x - (width / 2));
                             var y = (int)(center_y - (height / 2));
-                            Rectangle plate = new Rectangle(x - 5 , y - 5 , width + 10, height +10);
+                            Rectangle plate = new Rectangle(x, y, width, height);
                             imageCrop = img.Clone();
                             imageCrop.ROI = plate;
                             PlateImagesList.Add(imageCrop);
@@ -153,7 +148,8 @@ namespace Vietnamese_License_Plate_Recognition
                     OCRResult tempOCRResult = new OCRResult();
                     for (int i = 0; i < PlateImagesList.Count; i++)
                     {
-                        ocrResult = engine.DetectText(PlateImagesList[i].ToBitmap());                                            
+                        Image<Bgr, byte> imageResize = ResizeImage(PlateImagesList[i], 900, 0);
+                        ocrResult = engine.DetectText(imageResize.ToBitmap());                                            
                         List<string> arrayresult = new List<string>();
                         // Do dai toi da cua bien co the chua la 12 ky tu(bao gom ca cac ky tu "-" hoặc ".")
                         if (ocrResult.Text.Length > tempOCRResult.Text.Length && ocrResult.Text != String.Empty && ocrResult.Text.Length <= 12)
@@ -163,8 +159,7 @@ namespace Vietnamese_License_Plate_Recognition
                             for (int j = 0; j < ocrResult.TextBlocks.Count; j++)
                             {
                                 string TextBlocksPlate = ocrResult.TextBlocks[j].Text;
-                                TextBlocksPlate = Regex.Replace(TextBlocksPlate, @"[^0-9A-Z\-]", "");
-                                TextBlocksPlate = Regex.Replace(TextBlocksPlate, "^-|-$", "");
+                                TextBlocksPlate = Regex.Replace(TextBlocksPlate, @"[^A-Z0-9\-]|^-|-$", "");
                                 if (isValidPlatesNumberForm(TextBlocksPlate))
                                     {
                                         if(ocrResult.TextBlocks[j].Score < accuracy)
@@ -176,11 +171,9 @@ namespace Vietnamese_License_Plate_Recognition
                             }
                             if (arrayresult.Count != 0)
                             {
-                                textPlates = string.Join("-", arrayresult);
-                                ocrResultOCR = engineOCR.DetectText(PlateImagesList[i].ToBitmap());
-                                if (ocrResultOCR != null) Console.WriteLine(ocrResultOCR.Text);
-                                CvInvoke.Imwrite("imgcropColor.jpg", PlateImagesList[i]);
+                                textPlates = string.Join("-", arrayresult);                                                           
                                 pictureBox3.Image = PlateImagesList[i].ToBitmap();
+                                CvInvoke.Imwrite("imgcropColor.jpg", PlateImagesList[i]);
                                 textBox1.Text = textPlates;
                                 LPReturnForm obj = new LPReturnForm();
                                 ResultLPForm resultobj = obj.Result(textPlates, true, accuracy);
@@ -193,10 +186,6 @@ namespace Vietnamese_License_Plate_Recognition
                                 ResultLPForm resultobj = obj.Result("Null", false,0);
                                 label2.Text = "Biển số: " + resultobj.textPlate + ", status: " + resultobj.statusPlate + ", acc: " + resultobj.accPlate;
                             }
-                        }
-                        else if (ocrResult.Text.Length == tempOCRResult.Text.Length && ocrResult.TextBlocks.Count == tempOCRResult.TextBlocks.Count)
-                        {
-                            
                         }
                     }
                 }
@@ -240,14 +229,12 @@ namespace Vietnamese_License_Plate_Recognition
                 Model.SetPreferableBackend(Emgu.CV.Dnn.Backend.OpenCV);
                 Model.SetPreferableTarget(Target.Cpu);              
                 string root = Environment.CurrentDirectory;
-                string modelPathroot = root + @"\en";
+                string modelPathroot = root + @"\inference";
                 config.det_infer = modelPathroot + @"\ch_ppocr_server_v2.0_det_infer";
                 config.cls_infer = modelPathroot + @"\ch_ppocr_mobile_v2.0_cls_infer";
                 config.rec_infer = modelPathroot + @"\ch_ppocr_server_v2.0_rec_infer";
                 config.keys = modelPathroot + @"\en_dict.txt";
-                engine = new PaddleOCREngine(config, oCRParameter);
-                //
-                engineOCR = new PaddleOCREngine(null, oCRParameterOCR);
+                engine = new PaddleOCREngine(config, oCRParameter);              
             }
             catch (Exception ex)
             {

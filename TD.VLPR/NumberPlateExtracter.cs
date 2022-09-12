@@ -67,34 +67,34 @@ namespace TD.VLPR
                 float confThreshold = 0.8f;// Ngưỡng tin cậy
 
                 //Thay đổi kích thước ảnh
-
                 Image<Bgr, Byte> img = imgInput.ToImage<Bgr, Byte>();
+                img = ResizeImage(img, 1280, 0);
                 if (img.Width % 32 != 0 || img.Height % 32 != 0)
                 {
                     int imgDefaultSizeW = img.Width / 32 * 32;
                     int imgDefaultSizeH = img.Height / 32 * 32;
                     img = img.Resize(imgDefaultSizeW, imgDefaultSizeH, Inter.Cubic);
                 }
-
-                //Đưa ra kết quả từ mô hình
-
+                //Set input đầu vào cho mô hình
                 var input = DnnInvoke.BlobFromImage(img, 1 / 255.0, swapRB: true);
-                Model.SetInput(input);
+                Model.SetInput(input);               
                 VectorOfMat vectorOfMat = new VectorOfMat();
+
+                //Đưa ra kết quả detect được từ mô hình
                 Model.Forward(vectorOfMat, Model.UnconnectedOutLayersNames);
                 Image<Bgr, byte> imageCrop = img.Clone();
                 List<Image<Bgr, byte>> PlateImagesList = new List<Image<Bgr, byte>>();
                 for (int k = 0; k < vectorOfMat.Size; k++)
                 {
                     var mat = vectorOfMat[k];
-                    var data = ArrayTo2DList(mat.GetData());
+                    var data = ArrayTo2DList(mat.GetData());                    
                     for (int i = 0; i < data.Count; i++)
                     {
                         var row = data[i];
                         var rowsscores = row.Skip(5).ToArray();
                         var classId = rowsscores.ToList().IndexOf(rowsscores.Max());
                         var confidence = rowsscores[classId];
-                        //Kiem tra nguong tin cay
+                        //Lưu toạ độ các đối tượng detect được
                         if (confidence > confThreshold)
                         {
                             var center_x = (int)(row[0] * img.Width);
@@ -113,14 +113,14 @@ namespace TD.VLPR
                     }
                 }
 
-                //Đưa ra kết quả các ảnh đã detect được
-
+                //Đưa ra kết quả các ảnh đã detect được                             
                 if (PlateImagesList.Count > 0)
                 {
                     string temp = String.Empty;
                     for (int i = 0; i < PlateImagesList.Count; i++)
-                    {                      
-                        ocrResult = engine.DetectText(PlateImagesList[i].ToBitmap());                     
+                    {
+                        Image<Bgr, byte> imageResize = ResizeImage(PlateImagesList[i], 900, 0);
+                        ocrResult = engine.DetectText(imageResize.ToBitmap());
                         List<string> arrayresult = new List<string>();
                         // Do dai toi da cua bien co the chua la 12 ky tu(bao gom ca cac ky tu "-" hoặc ".")
                         if (ocrResult.Text.Length > temp.Length && ocrResult.Text != String.Empty && ocrResult.Text.Length <= 12)
@@ -130,8 +130,7 @@ namespace TD.VLPR
                             for (int j = 0; j < ocrResult.TextBlocks.Count; j++)
                             {
                                 string TextBlocksPlate = ocrResult.TextBlocks[j].Text;
-                                TextBlocksPlate = Regex.Replace(TextBlocksPlate, @"[^0-9A-Z\-]", "");
-                                TextBlocksPlate = Regex.Replace(TextBlocksPlate, "^-|-$", "");
+                                TextBlocksPlate = Regex.Replace(TextBlocksPlate, @"[^A-Z0-9\-]|^-|-$", "");
                                 if (isValidPlatesNumber(TextBlocksPlate))
                                 {
                                     if (ocrResult.TextBlocks[j].Score < accuracy)
@@ -155,7 +154,12 @@ namespace TD.VLPR
                             }
                         }
                     }
-                }
+                    if (ocrResult.Text == String.Empty)
+                    {
+                        LPReturn obj = new LPReturn();
+                        result = obj.Result("Null", false, 0);
+                    }      
+                }                
                 else
                 {
                     LPReturn obj = new LPReturn();
@@ -176,18 +180,17 @@ namespace TD.VLPR
                 string textPlates = string.Empty;
                 float confThreshold = 0.8f;// Ngưỡng tin cậy
 
-                //Thay đổi kích thước ảnh
-                
+                //Thay đổi kích thước ảnh              
                 var img = new Image<Bgr, byte>(path);
+                img = ResizeImage(img, 1280, 0);
                 if (img.Width % 32 != 0 || img.Height % 32 != 0)
                 {
                     int imgDefaultSizeW = img.Width / 32 * 32;
                     int imgDefaultSizeH = img.Height / 32 * 32;
                     img = img.Resize(imgDefaultSizeW, imgDefaultSizeH, Inter.Cubic);
                 }
+
                 //Đưa ra kết quả từ mô hình
-
-
                 var input = DnnInvoke.BlobFromImage(img, 1 / 255.0, swapRB: true);
                 Model.SetInput(input);
                 VectorOfMat vectorOfMat = new VectorOfMat();
@@ -227,21 +230,21 @@ namespace TD.VLPR
 
                 if (PlateImagesList.Count > 0)
                 {
-                    string temp = String.Empty;
+                    OCRResult tempOCRResult = new OCRResult();
                     for (int i = 0; i < PlateImagesList.Count; i++)
-                    {                       
-                        ocrResult = engine.DetectText(PlateImagesList[i].ToBitmap());                      
+                    {
+                        Image<Bgr, byte> imageResize = ResizeImage(PlateImagesList[i], 900, 0);
+                        ocrResult = engine.DetectText(imageResize.ToBitmap());
                         List<string> arrayresult = new List<string>();
                         // Do dai toi da cua bien co the chua la 12 ky tu(bao gom ca cac ky tu "-" hoặc ".")
-                        if (ocrResult.Text.Length > temp.Length && ocrResult.Text != String.Empty && ocrResult.Text.Length <= 12)
+                        if (ocrResult.Text.Length > tempOCRResult.Text.Length && ocrResult.Text != String.Empty && ocrResult.Text.Length <= 12)
                         {
-                            temp = ocrResult.Text;
+                            tempOCRResult = ocrResult;
                             double accuracy = 1;
                             for (int j = 0; j < ocrResult.TextBlocks.Count; j++)
                             {
                                 string TextBlocksPlate = ocrResult.TextBlocks[j].Text;
-                                TextBlocksPlate = Regex.Replace(TextBlocksPlate, @"[^0-9A-Z\-]", "");
-                                TextBlocksPlate = Regex.Replace(TextBlocksPlate, "^-|-$", "");
+                                TextBlocksPlate = Regex.Replace(TextBlocksPlate, @"[^A-Z0-9\-]|^-|-$", "");
                                 if (isValidPlatesNumber(TextBlocksPlate))
                                 {
                                     if (ocrResult.TextBlocks[j].Score < accuracy)
@@ -286,7 +289,7 @@ namespace TD.VLPR
             Model.SetPreferableBackend(Emgu.CV.Dnn.Backend.OpenCV);
             Model.SetPreferableTarget(Target.Cpu);
             string root = Environment.CurrentDirectory;
-            string modelPathroot = root + @"\en";
+            string modelPathroot = root + @"\inference";
             config.det_infer = modelPathroot + @"\ch_ppocr_server_v2.0_det_infer";
             config.cls_infer = modelPathroot + @"\ch_ppocr_mobile_v2.0_cls_infer";
             config.rec_infer = modelPathroot + @"\ch_ppocr_server_v2.0_rec_infer";
@@ -302,6 +305,30 @@ namespace TD.VLPR
                 return (true);
             else
                 return (false);
+        }
+        public static Image<Bgr, byte> ResizeImage(Image<Bgr, byte> imageOriginal, int width = 0, int height = 0)
+        {
+            var dim = new Size(0, 0);
+            (int w, int h) = (imageOriginal.Width, imageOriginal.Height);
+            if (width == 0 && height == 0)
+            {
+                return imageOriginal;
+            }
+            if (width == 0)
+            {
+                double r = height / (float)h;
+                dim.Width = (int)(w * r);
+                dim.Height = height;
+            }
+            else
+            {
+                //double r = width / (float)w;
+                double r = width / (float)w;
+                dim.Width = width;
+                dim.Height = (int)(h * r);
+            }
+            Image<Bgr, byte> imageReszie = imageOriginal.Resize(dim.Width, dim.Height, Inter.Cubic);
+            return imageReszie;
         }
     }
 
