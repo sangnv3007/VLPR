@@ -23,7 +23,7 @@ Dowload 2 file trong thư mục [backup](https://drive.google.com/drive/folders/
   yolov4-tiny-custom.cfg
   yolov4-tiny-custom_final.weights
 ```
-Dowload thư mục [inference](https://drive.google.com/drive/folders/1YROQ6bVRuFmmfAjJAS0O6tI85vbsYfxV?usp=sharing) và copy vào thư mục chạy dự án
+Dowload thư mục [en](https://drive.google.com/drive/folders/1YROQ6bVRuFmmfAjJAS0O6tI85vbsYfxV?usp=sharing) và copy vào thư mục chạy dự án
 ```
 en
 └───en_dict.txt
