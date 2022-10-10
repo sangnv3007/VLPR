@@ -90,27 +90,32 @@ namespace Vietnamese_License_Plate_Recognition
         {               
                 string textPlates = "";
                 float confThreshold = 0.8f;
-
+                
                 //Thay đổi kich thước ảnh đầu vào
 
                 var img = new Image<Bgr, byte>(path);
-                img = ResizeImage(img, 1280, 0);
-                if (img.Width % 32 != 0 || img.Height % 32 != 0)
-                {
-                    int imgDefaultSizeW = img.Width / 32 * 32;
-                    int imgDefaultSizeH = img.Height / 32 * 32;
-                    img = img.Resize(imgDefaultSizeW, imgDefaultSizeH, Inter.Cubic);
-                }
-                label6.Text = path;
+                //img = ResizeImage(img, 1280, 0);
+                //if (img.Width % 32 != 0 || img.Height % 32 != 0)
+                //{
+                //    int imgDefaultSizeW = img.Width / 32 * 32;
+                //    int imgDefaultSizeH = img.Height / 32 * 32;
+                //    img = img.Resize(imgDefaultSizeW, imgDefaultSizeH, Inter.Cubic);
+                //}
+                //label6.Text = path;
 
                 //Dự đoán vùng chứa biển số
 
-                var input = DnnInvoke.BlobFromImage(img, 1 / 255.0, swapRB: true);
+                double scale = 0.00392;
+                float nms_threshold = 0.4f;
+                //Crop ảnh để detect
+                var input = DnnInvoke.BlobFromImage(img, scale, new Size(416, 416), new MCvScalar(0, 0, 0), swapRB: true, crop: false);
                 Model.SetInput(input);
                 VectorOfMat vectorOfMat = new VectorOfMat();
                 Model.Forward(vectorOfMat, Model.UnconnectedOutLayersNames);
-                Image<Bgr, byte> imageCrop = img.Clone();
+                Image<Bgr, byte> imageCrop = img.Clone();          
                 List<Image<Bgr, byte>> PlateImagesList = new List<Image<Bgr, byte>>();
+                List<Rectangle> ListRec = new List<Rectangle>();
+                List<float> confidences = new List<float>();
                 for (int k = 0; k < vectorOfMat.Size; k++)
                 {
                     var mat = vectorOfMat[k];
@@ -136,24 +141,26 @@ namespace Vietnamese_License_Plate_Recognition
                             imageCrop = img.Clone();
                             imageCrop.ROI = plate;
                             PlateImagesList.Add(imageCrop);
+                            confidences.Add(confidence);
+                            //CvInvoke.Rectangle(img, new Rectangle(x, y, width, height), new MCvScalar(0, 0, 255), 2); //Ve khung hinh chua bien so
+                            ListRec.Add(plate);
                         }
                     }
                 }
-
                 //Đưa ra kết quả các ảnh đã detect được
-
-                if (PlateImagesList.Count > 0)
+                List<int> indices = new List<int>();
+                indices = DnnInvoke.NMSBoxes(ListRec.ToArray(), confidences.ToArray(), confThreshold, nms_threshold).ToList();
+                if(indices.Count > 0)
                 {
-                    //string tempOCR = String.Empty;
                     OCRResult tempOCRResult = new OCRResult();
-                    for (int i = 0; i < PlateImagesList.Count; i++)
-                    {
-                        Image<Bgr, byte> imageResize = ResizeImage(PlateImagesList[i], 900, 0);
-                        ocrResult = engine.DetectText(imageResize.ToBitmap());                                            
+                    foreach (var indice in indices)
+                    {                     
+                        Image<Bgr, byte> imageResize = ResizeImage(PlateImagesList[indice], 900, 0);
+                        ocrResult = engine.DetectText(imageResize.ToBitmap());
                         List<string> arrayresult = new List<string>();
-                        // Do dai toi da cua bien co the chua la 12 ky tu(bao gom ca cac ky tu "-" hoặc ".")
+                        // Do dai toi da cua bien co the chua la 12 ky tu(bao gom ca cac ky tu "-")
                         if (ocrResult.Text.Length > tempOCRResult.Text.Length && ocrResult.Text != String.Empty && ocrResult.Text.Length <= 12)
-                         {
+                        {
                             tempOCRResult = ocrResult;
                             double accuracy = 1;
                             for (int j = 0; j < ocrResult.TextBlocks.Count; j++)
@@ -161,29 +168,29 @@ namespace Vietnamese_License_Plate_Recognition
                                 string TextBlocksPlate = ocrResult.TextBlocks[j].Text;
                                 TextBlocksPlate = Regex.Replace(TextBlocksPlate, @"[^A-Z0-9\-]|^-|-$", "");
                                 if (isValidPlatesNumberForm(TextBlocksPlate))
+                                {
+                                    if (ocrResult.TextBlocks[j].Score < accuracy)
                                     {
-                                        if(ocrResult.TextBlocks[j].Score < accuracy)
-                                        {
-                                            accuracy = Math.Round(ocrResult.TextBlocks[j].Score, 2);
-                                        }    
-                                        arrayresult.Add(TextBlocksPlate);
+                                        accuracy = Math.Round(ocrResult.TextBlocks[j].Score, 2);
                                     }
+                                    arrayresult.Add(TextBlocksPlate);
+                                }
                             }
                             if (arrayresult.Count != 0)
                             {
-                                textPlates = string.Join("-", arrayresult);                                                           
-                                pictureBox3.Image = PlateImagesList[i].ToBitmap();
-                                CvInvoke.Imwrite("imgcropColor.jpg", PlateImagesList[i]);
+                                textPlates = string.Join("-", arrayresult);
+                                pictureBox3.Image = PlateImagesList[indice].ToBitmap();
+                                CvInvoke.Imwrite("imgcropColor.jpg", PlateImagesList[indice]);
                                 textBox1.Text = textPlates;
                                 LPReturnForm obj = new LPReturnForm();
                                 ResultLPForm resultobj = obj.Result(textPlates, true, accuracy);
-                                label2.Text = "Biển số: " + resultobj.textPlate + ", status: " + resultobj.statusPlate + ", acc: "+ resultobj.accPlate;
+                                label2.Text = "Biển số: " + resultobj.textPlate + ", status: " + resultobj.statusPlate + ", acc: " + resultobj.accPlate;
                             }
                             else
                             {
-                                pictureBox3.Image = PlateImagesList[i].ToBitmap();
+                                pictureBox3.Image = PlateImagesList[indice].ToBitmap();
                                 LPReturnForm obj = new LPReturnForm();
-                                ResultLPForm resultobj = obj.Result("Null", false,0);
+                                ResultLPForm resultobj = obj.Result("Null", false, 0);
                                 label2.Text = "Biển số: " + resultobj.textPlate + ", status: " + resultobj.statusPlate + ", acc: " + resultobj.accPlate;
                             }
                         }
@@ -192,9 +199,9 @@ namespace Vietnamese_License_Plate_Recognition
                 else
                 {
                     LPReturnForm obj = new LPReturnForm();
-                    ResultLPForm resultobj = obj.Result("No license plate found", false,0);
+                    ResultLPForm resultobj = obj.Result("No license plate found", false, 0);
                     label2.Text = "Biển số: " + resultobj.textPlate + ", status: " + resultobj.statusPlate + ", acc: " + resultobj.accPlate;
-                }
+                }              
         }
 
         private void pictureBox1_Click(object sender, EventArgs e)
@@ -229,7 +236,7 @@ namespace Vietnamese_License_Plate_Recognition
                 Model.SetPreferableBackend(Emgu.CV.Dnn.Backend.OpenCV);
                 Model.SetPreferableTarget(Target.Cpu);              
                 string root = Environment.CurrentDirectory;
-                string modelPathroot = root + @"\inference";
+                string modelPathroot = root + @"\en";
                 config.det_infer = modelPathroot + @"\ch_ppocr_server_v2.0_det_infer";
                 config.cls_infer = modelPathroot + @"\ch_ppocr_mobile_v2.0_cls_infer";
                 config.rec_infer = modelPathroot + @"\ch_ppocr_server_v2.0_rec_infer";

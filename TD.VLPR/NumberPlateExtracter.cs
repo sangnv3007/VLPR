@@ -65,25 +65,19 @@ namespace TD.VLPR
             {
                 string textPlates = string.Empty;
                 float confThreshold = 0.8f;// Ngưỡng tin cậy
-
-                //Thay đổi kích thước ảnh
+                double scale = 0.00392;
+                float nms_threshold = 0.4f;
                 Image<Bgr, Byte> img = imgInput.ToImage<Bgr, Byte>();
-                img = ResizeImage(img, 1280, 0);
-                if (img.Width % 32 != 0 || img.Height % 32 != 0)
-                {
-                    int imgDefaultSizeW = img.Width / 32 * 32;
-                    int imgDefaultSizeH = img.Height / 32 * 32;
-                    img = img.Resize(imgDefaultSizeW, imgDefaultSizeH, Inter.Cubic);
-                }
                 //Set input đầu vào cho mô hình
-                var input = DnnInvoke.BlobFromImage(img, 1 / 255.0, swapRB: true);
+                var input = DnnInvoke.BlobFromImage(img, scale, new Size(416, 416), new MCvScalar(0, 0, 0), swapRB: true, crop: false);
                 Model.SetInput(input);               
                 VectorOfMat vectorOfMat = new VectorOfMat();
-
                 //Đưa ra kết quả detect được từ mô hình
                 Model.Forward(vectorOfMat, Model.UnconnectedOutLayersNames);
                 Image<Bgr, byte> imageCrop = img.Clone();
                 List<Image<Bgr, byte>> PlateImagesList = new List<Image<Bgr, byte>>();
+                List<Rectangle> ListRec = new List<Rectangle>();
+                List<float> confidences = new List<float>();
                 for (int k = 0; k < vectorOfMat.Size; k++)
                 {
                     var mat = vectorOfMat[k];
@@ -109,23 +103,27 @@ namespace TD.VLPR
                             imageCrop = img.Clone();
                             imageCrop.ROI = plate;
                             PlateImagesList.Add(imageCrop);
+                            confidences.Add(confidence);                           
+                            ListRec.Add(plate);
                         }
                     }
                 }
-
-                //Đưa ra kết quả các ảnh đã detect được                             
-                if (PlateImagesList.Count > 0)
+                //Loại bỏ các boxes dư thừa bằng NMS
+                List<int> indices = new List<int>();
+                indices = DnnInvoke.NMSBoxes(ListRec.ToArray(), confidences.ToArray(), confThreshold, nms_threshold).ToList();
+                //Đưa ra kết quả các ảnh đã detect được
+                if (indices.Count > 0)
                 {
-                    string temp = String.Empty;
-                    for (int i = 0; i < PlateImagesList.Count; i++)
+                    OCRResult tempOCRResult = new OCRResult();
+                    foreach (var indice in indices)
                     {
-                        Image<Bgr, byte> imageResize = ResizeImage(PlateImagesList[i], 900, 0);
+                        Image<Bgr, byte> imageResize = ResizeImage(PlateImagesList[indice], 900, 0);
                         ocrResult = engine.DetectText(imageResize.ToBitmap());
                         List<string> arrayresult = new List<string>();
-                        // Do dai toi da cua bien co the chua la 12 ky tu(bao gom ca cac ky tu "-" hoặc ".")
-                        if (ocrResult.Text.Length > temp.Length && ocrResult.Text != String.Empty && ocrResult.Text.Length <= 12)
+                        // Do dai toi da cua bien co the chua la 12 ky tu(bao gom ca cac ky tu "-")
+                        if (ocrResult.Text.Length > tempOCRResult.Text.Length && ocrResult.Text != String.Empty && ocrResult.Text.Length <= 12)
                         {
-                            temp = ocrResult.Text;
+                            tempOCRResult = ocrResult;
                             double accuracy = 1;
                             for (int j = 0; j < ocrResult.TextBlocks.Count; j++)
                             {
@@ -142,28 +140,23 @@ namespace TD.VLPR
                             }
                             if (arrayresult.Count != 0)
                             {
-                                textPlates = string.Join("-", arrayresult);
-                                CvInvoke.Imwrite("imgcropColor.jpg", PlateImagesList[i]);
+                                textPlates = string.Join("-", arrayresult);            
+                                CvInvoke.Imwrite("imgcropColor.jpg", PlateImagesList[indice]);
                                 LPReturn obj = new LPReturn();
-                                result = obj.Result(textPlates, true, accuracy);
+                                result = obj.Result(textPlates, true, accuracy, PlateImagesList[indice]);
                             }
                             else
                             {
                                 LPReturn obj = new LPReturn();
-                                result = obj.Result("Null", false, 0);
+                                result = obj.Result("Null", false, 0, PlateImagesList[indice]);                              
                             }
                         }
                     }
-                    if (ocrResult.Text == String.Empty)
-                    {
-                        LPReturn obj = new LPReturn();
-                        result = obj.Result("Null", false, 0);
-                    }      
-                }                
+                }
                 else
                 {
                     LPReturn obj = new LPReturn();
-                    result = obj.Result("No license plate found", false, 0);
+                    result = obj.Result("No license plate found", false, 0, img);
                 }
             }
             catch (Exception ex)
@@ -179,24 +172,20 @@ namespace TD.VLPR
             {
                 string textPlates = string.Empty;
                 float confThreshold = 0.8f;// Ngưỡng tin cậy
-
-                //Thay đổi kích thước ảnh              
+                double scale = 0.00392;
+                float nms_threshold = 0.4f;
+                //Đọc ảnh từ đường dẫn
                 var img = new Image<Bgr, byte>(path);
-                img = ResizeImage(img, 1280, 0);
-                if (img.Width % 32 != 0 || img.Height % 32 != 0)
-                {
-                    int imgDefaultSizeW = img.Width / 32 * 32;
-                    int imgDefaultSizeH = img.Height / 32 * 32;
-                    img = img.Resize(imgDefaultSizeW, imgDefaultSizeH, Inter.Cubic);
-                }
-
-                //Đưa ra kết quả từ mô hình
-                var input = DnnInvoke.BlobFromImage(img, 1 / 255.0, swapRB: true);
+                //Set input đầu vào cho mô hình
+                var input = DnnInvoke.BlobFromImage(img, scale, new Size(416, 416), new MCvScalar(0, 0, 0), swapRB: true, crop: false);
                 Model.SetInput(input);
                 VectorOfMat vectorOfMat = new VectorOfMat();
+                //Đưa ra kết quả detect được từ mô hình
                 Model.Forward(vectorOfMat, Model.UnconnectedOutLayersNames);
                 Image<Bgr, byte> imageCrop = img.Clone();
                 List<Image<Bgr, byte>> PlateImagesList = new List<Image<Bgr, byte>>();
+                List<Rectangle> ListRec = new List<Rectangle>();
+                List<float> confidences = new List<float>();
                 for (int k = 0; k < vectorOfMat.Size; k++)
                 {
                     var mat = vectorOfMat[k];
@@ -207,7 +196,7 @@ namespace TD.VLPR
                         var rowsscores = row.Skip(5).ToArray();
                         var classId = rowsscores.ToList().IndexOf(rowsscores.Max());
                         var confidence = rowsscores[classId];
-                        //Kiem tra nguong tin cay
+                        //Lưu toạ độ các đối tượng detect được
                         if (confidence > confThreshold)
                         {
                             var center_x = (int)(row[0] * img.Width);
@@ -222,21 +211,24 @@ namespace TD.VLPR
                             imageCrop = img.Clone();
                             imageCrop.ROI = plate;
                             PlateImagesList.Add(imageCrop);
+                            confidences.Add(confidence);
+                            ListRec.Add(plate);
                         }
                     }
                 }
-
+                //Loại bỏ các boxes dư thừa bằng NMS
+                List<int> indices = new List<int>();
+                indices = DnnInvoke.NMSBoxes(ListRec.ToArray(), confidences.ToArray(), confThreshold, nms_threshold).ToList();
                 //Đưa ra kết quả các ảnh đã detect được
-
-                if (PlateImagesList.Count > 0)
+                if (indices.Count > 0)
                 {
                     OCRResult tempOCRResult = new OCRResult();
-                    for (int i = 0; i < PlateImagesList.Count; i++)
+                    foreach (var indice in indices)
                     {
-                        Image<Bgr, byte> imageResize = ResizeImage(PlateImagesList[i], 900, 0);
+                        Image<Bgr, byte> imageResize = ResizeImage(PlateImagesList[indice], 900, 0);
                         ocrResult = engine.DetectText(imageResize.ToBitmap());
                         List<string> arrayresult = new List<string>();
-                        // Do dai toi da cua bien co the chua la 12 ky tu(bao gom ca cac ky tu "-" hoặc ".")
+                        // Do dai toi da cua bien co the chua la 12 ky tu(bao gom ca cac ky tu "-")
                         if (ocrResult.Text.Length > tempOCRResult.Text.Length && ocrResult.Text != String.Empty && ocrResult.Text.Length <= 12)
                         {
                             tempOCRResult = ocrResult;
@@ -257,15 +249,14 @@ namespace TD.VLPR
                             if (arrayresult.Count != 0)
                             {
                                 textPlates = string.Join("-", arrayresult);
-                                //CvInvoke.Imwrite(@"D:\PaddleOCR\Recognition PaddleOCR\CropLP\imgcropColor" + textPlates + ".jpg", PlateImagesList[i]);
-                                CvInvoke.Imwrite("imgcropColor.jpg", PlateImagesList[i]);
+                                CvInvoke.Imwrite("imgcropColor.jpg", PlateImagesList[indice]);
                                 LPReturn obj = new LPReturn();
-                                result = obj.Result(textPlates, true, accuracy);
+                                result = obj.Result(textPlates, true, accuracy, PlateImagesList[indice]);
                             }
                             else
                             {
                                 LPReturn obj = new LPReturn();
-                                result = obj.Result("Null", false, 0);
+                                result = obj.Result("Null", false, 0, PlateImagesList[indice]);
                             }
                         }
                     }
@@ -273,7 +264,7 @@ namespace TD.VLPR
                 else
                 {
                     LPReturn obj = new LPReturn();
-                    result = obj.Result("No license plate found", false, 0);
+                    result = obj.Result("No license plate found", false, 0, img);
                 }
             }
             catch (Exception ex)
@@ -284,18 +275,25 @@ namespace TD.VLPR
         }
         public void LoadModelRecognize()
         {
-            //Load model detect LP
-            Model = DnnInvoke.ReadNetFromDarknet(PathConfig, PathWeights);
-            Model.SetPreferableBackend(Emgu.CV.Dnn.Backend.OpenCV);
-            Model.SetPreferableTarget(Target.Cpu);
-            string root = Environment.CurrentDirectory;
-            string modelPathroot = root + @"\inference";
-            config.det_infer = modelPathroot + @"\ch_ppocr_server_v2.0_det_infer";
-            config.cls_infer = modelPathroot + @"\ch_ppocr_mobile_v2.0_cls_infer";
-            config.rec_infer = modelPathroot + @"\ch_ppocr_server_v2.0_rec_infer";
-            config.keys = modelPathroot + @"\en_dict.txt";
-            //Load library paddleOCR
-            engine = new PaddleOCREngine(config, oCRParameter);
+            try
+            {
+                //Load model detect LP
+                Model = DnnInvoke.ReadNetFromDarknet(PathConfig, PathWeights);
+                Model.SetPreferableBackend(Emgu.CV.Dnn.Backend.OpenCV);
+                Model.SetPreferableTarget(Target.Cpu);
+                string root = Environment.CurrentDirectory;
+                string modelPathroot = root + @"\en";
+                config.det_infer = modelPathroot + @"\ch_ppocr_server_v2.0_det_infer";
+                config.cls_infer = modelPathroot + @"\ch_ppocr_mobile_v2.0_cls_infer";
+                config.rec_infer = modelPathroot + @"\ch_ppocr_server_v2.0_rec_infer";
+                config.keys = modelPathroot + @"\en_dict.txt";
+                //Load library paddleOCR
+                engine = new PaddleOCREngine(config, oCRParameter);
+            }
+            catch(Exception ex)
+            {
+                Console.WriteLine(ex.Message);                
+            }
         }
         public static bool isValidPlatesNumber(string inputPlatesNumber)
         {
@@ -347,18 +345,23 @@ namespace TD.VLPR
         /// Độ chính xác nhận dạng biển số xe
         /// </summary>
         public double accPlate { get; set; }
+        /// <summary>
+        /// Ảnh cắt biển số
+        /// </summary>
+        public Image<Bgr,byte> imagePlate { get; set; }
     }
 
     public class LPReturn
     {
         // Create a class result for ResultLP.
-        public ResultLP Result(string textPlate, bool statusPlate, double accPlate)
+        public ResultLP Result(string textPlate, bool statusPlate, double accPlate, Image<Bgr, byte> imageCrop)
         {
             ResultLP result = new ResultLP();
             result.textPlate = textPlate;
             if (statusPlate) result.statusPlate = 0;
             else result.statusPlate = 1;
             result.accPlate = accPlate;
+            result.imagePlate = imageCrop;
             return result;
         }
     }
