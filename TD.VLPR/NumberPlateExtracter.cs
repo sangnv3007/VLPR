@@ -282,7 +282,7 @@ namespace TD.VLPR
                 Model.SetPreferableBackend(Emgu.CV.Dnn.Backend.OpenCV);
                 Model.SetPreferableTarget(Target.Cpu);
                 string root = Environment.CurrentDirectory;
-                string modelPathroot = root + @"\en";
+                string modelPathroot = root + @"\inference";
                 config.det_infer = modelPathroot + @"\ch_ppocr_server_v2.0_det_infer";
                 config.cls_infer = modelPathroot + @"\ch_ppocr_mobile_v2.0_cls_infer";
                 config.rec_infer = modelPathroot + @"\ch_ppocr_server_v2.0_rec_infer";

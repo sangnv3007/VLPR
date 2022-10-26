@@ -23,9 +23,9 @@ namespace Vietnamese_License_Plate_Recognition
             ///Run Apllication Form
             ///</summary>
             ///
-            Application.EnableVisualStyles();
-            Application.SetCompatibleTextRenderingDefault(false);
-            Application.Run(new Form1());
+            //Application.EnableVisualStyles();
+            //Application.SetCompatibleTextRenderingDefault(false);
+            //Application.Run(new Form1());
 
             ///<summary>
             ///Run Console Command
@@ -38,25 +38,25 @@ namespace Vietnamese_License_Plate_Recognition
             //    File.AppendAllText("Result.txt", results + "\n");
             //}
 
-            //var extracter = new NumberPlateExtracter();
-            //string path = @"D:\Download Chorme\ImageTest\56a553dd2f53ed0db442.jpg";
-            //var img = new Image<Bgr, byte>(path);
-            ////Thời gian bắt đầu
-            //Stopwatch swObj = new Stopwatch();
-            //swObj.Start();
-            //ResultLP resultobj = extracter.ProcessImage(img.Mat);
-            ////Thời gian kết thúc
-            //swObj.Stop();
-            //Stopwatch swObj1 = new Stopwatch();
-            //swObj1.Start();
-            //ResultLP resultobj1 = extracter.ProcessImage(path);
-            ////Thời gian kết thúc
-            //swObj1.Stop();
-            ////Tổng thời gian thực hiện               
-            //Console.WriteLine(Math.Round(swObj.Elapsed.TotalSeconds, 2).ToString() + " giây");
-            //Console.WriteLine(Math.Round(swObj1.Elapsed.TotalSeconds, 2).ToString() + " giây");
-            //Console.WriteLine("TextPlate    1: {0}", resultobj1.textPlate);
-            //Console.WriteLine("TextPlate    : {0}", resultobj.textPlate);
+            var extracter = new NumberPlateExtracter();
+            string path = @"\\192.168.2.136\share\captures\2022\10\26\in\1\10-48-02.949\overview.jpg";
+            var img = new Image<Bgr, byte>(path);
+            //Thời gian bắt đầu
+            Stopwatch swObj = new Stopwatch();
+            swObj.Start();
+            ResultLP resultobj = extracter.ProcessImage(img.Mat);
+            //Thời gian kết thúc
+            swObj.Stop();
+            Stopwatch swObj1 = new Stopwatch();
+            swObj1.Start();
+            ResultLP resultobj1 = extracter.ProcessImage(path);
+            //Thời gian kết thúc
+            swObj1.Stop();
+            //Tổng thời gian thực hiện               
+            Console.WriteLine(Math.Round(swObj.Elapsed.TotalSeconds, 2).ToString() + " giây");
+            Console.WriteLine(Math.Round(swObj1.Elapsed.TotalSeconds, 2).ToString() + " giây");    
+            Console.WriteLine("TextPlate    : {0}", resultobj.textPlate);
+            Console.WriteLine("TextPlate    : {0}", resultobj1.textPlate);
         }
     }
 }
