@@ -23,7 +23,7 @@
     <DefineConstants>DEBUG;TRACE</DefineConstants>
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
-    <PlatformTarget>AnyCPU</PlatformTarget>
+    <PlatformTarget>x64</PlatformTarget>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
     <DebugType>pdbonly</DebugType>
@@ -93,20 +93,21 @@
     </PackageReference>
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
-<PropertyGroup>
-	<Title>TD.VLPR</Title>
-	<Authors></Authors>
-	<Description>TD/FEngine library to creates and manages Excel-like formulas.</Description>
-
-	<PackageId>TD.VLPR</PackageId>
-	<PackageVersion>1.0.0</PackageVersion>
-	<PackageProjectUrl>https://github.com/sangnv3007/VLPR</PackageProjectUrl>
-	<RepositoryUrl>https://github.com/sangnv3007/VLPR</RepositoryUrl>
-	<PackageIconUrl></PackageIconUrl>
-	<PackageTags> VLPR </PackageTags>
-
-	<PackageRequireLicenseAcceptance>false</PackageRequireLicenseAcceptance>
-	<PackageReleaseNotes></PackageReleaseNotes>
-	<Copyright>TAN DAN.,JSC</Copyright>
-</PropertyGroup>
+  <PropertyGroup>
+    <Title>TD.VLPR</Title>
+    <Authors>
+    </Authors>
+    <Description>TD/FEngine library to creates and manages Excel-like formulas.</Description>
+    <PackageId>TD.VLPR</PackageId>
+    <PackageVersion>1.0.0</PackageVersion>
+    <PackageProjectUrl>https://github.com/sangnv3007/VLPR</PackageProjectUrl>
+    <RepositoryUrl>https://github.com/sangnv3007/VLPR</RepositoryUrl>
+    <PackageIconUrl>
+    </PackageIconUrl>
+    <PackageTags> VLPR </PackageTags>
+    <PackageRequireLicenseAcceptance>false</PackageRequireLicenseAcceptance>
+    <PackageReleaseNotes>
+    </PackageReleaseNotes>
+    <Copyright>TAN DAN.,JSC</Copyright>
+  </PropertyGroup>
 </Project>

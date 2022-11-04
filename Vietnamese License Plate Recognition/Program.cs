@@ -23,9 +23,9 @@ namespace Vietnamese_License_Plate_Recognition
             ///Run Apllication Form
             ///</summary>
             ///
-            Application.EnableVisualStyles();
-            Application.SetCompatibleTextRenderingDefault(false);
-            Application.Run(new Form1());
+            //Application.EnableVisualStyles();
+            //Application.SetCompatibleTextRenderingDefault(false);
+            //Application.Run(new Form1());
 
             ///<summary>
             ///Run Console Command
@@ -39,20 +39,21 @@ namespace Vietnamese_License_Plate_Recognition
             //}
 
             //var extracter = new NumberPlateExtracter();
-            //string path = @"C:\Users\Admin\source\repos\Vietnamese-License-Plate-Recognition\Vietnamese License Plate Recognition\bin\x64\Debug\test1 (1).jpg";
+            //string root = Environment.CurrentDirectory;
+            //string path = root + @"\test1 (3).jpg";
             //var img = new Image<Bgr, byte>(path);
-            //////Thời gian bắt đầu
+            ////Thời gian bắt đầu
             //Stopwatch swObj = new Stopwatch();
             //swObj.Start();
             //ResultLP resultobj = extracter.ProcessImage(img.Mat);
-            //////Thời gian kết thúc
+            ////Thời gian kết thúc
             //swObj.Stop();
             //Stopwatch swObj1 = new Stopwatch();
             //swObj1.Start();
             //ResultLP resultobj1 = extracter.ProcessImage(path);
-            //////Thời gian kết thúc
+            ////Thời gian kết thúc
             //swObj1.Stop();
-            //////Tổng thời gian thực hiện               
+            ////Tổng thời gian thực hiện               
             //Console.WriteLine(Math.Round(swObj.Elapsed.TotalSeconds, 2).ToString() + " giây");
             //Console.WriteLine(Math.Round(swObj1.Elapsed.TotalSeconds, 2).ToString() + " giây");
             //Console.WriteLine("TextPlate    : {0}", resultobj.textPlate);

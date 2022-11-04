@@ -160,8 +160,8 @@ namespace Vietnamese_License_Plate_Recognition
                     OCRResult tempOCRResult = new OCRResult();
                     foreach (var indice in indices)
                     {
-                        //Image<Bgr, byte> imageResize = ResizeImage(PlateImagesList[indice], 100, 0);
-                        ocrResult = engine.DetectText(PlateImagesList[indice].ToBitmap());
+                        Image<Bgr, byte> imageResize = ResizeImage(PlateImagesList[indice], 600, 0);
+                        ocrResult = engine.DetectText(imageResize.ToBitmap());
                         List<string> arrayresult = new List<string>();
                         // Do dai toi da cua bien co the chua la 12 ky tu(bao gom ca cac ky tu "-")
                         if (ocrResult.Text.Length > tempOCRResult.Text.Length && ocrResult.Text != String.Empty && ocrResult.Text.Length <= 12)
