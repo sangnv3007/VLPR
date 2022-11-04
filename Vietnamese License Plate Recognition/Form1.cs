@@ -108,45 +108,50 @@ namespace Vietnamese_License_Plate_Recognition
                 double scale = 0.00392;
                 float nms_threshold = 0.4f;
                 //Crop ảnh để detect
+                Stopwatch swObj = new Stopwatch();
+                swObj.Start();
                 var input = DnnInvoke.BlobFromImage(img, scale, new Size(416, 416), new MCvScalar(0, 0, 0), swapRB: true, crop: false);
                 Model.SetInput(input);
                 VectorOfMat vectorOfMat = new VectorOfMat();
                 Model.Forward(vectorOfMat, Model.UnconnectedOutLayersNames);
+                swObj.Stop();
+                //MessageBox.Show(Math.Round(swObj.Elapsed.TotalSeconds, 2).ToString() + " giây");
                 Image<Bgr, byte> imageCrop = img.Clone();          
                 List<Image<Bgr, byte>> PlateImagesList = new List<Image<Bgr, byte>>();
                 List<Rectangle> ListRec = new List<Rectangle>();
-                List<float> confidences = new List<float>();
+                List<float> confidences = new List<float>();          
                 for (int k = 0; k < vectorOfMat.Size; k++)
-                {
-                    var mat = vectorOfMat[k];
-                    var data = ArrayTo2DList(mat.GetData());
-                    for (int i = 0; i < data.Count; i++)
                     {
-                        var row = data[i];
-                        var rowsscores = row.Skip(5).ToArray();
-                        var classId = rowsscores.ToList().IndexOf(rowsscores.Max());
-                        var confidence = rowsscores[classId];
-                        //Kiem tra nguong tin cay
-                        if (confidence > confThreshold)
+                        var mat = vectorOfMat[k];
+                        var data = ArrayTo2DList(mat.GetData());
+                        for (int i = 0; i < data.Count; i++)
                         {
-                            var center_x = (int)(row[0] * img.Width);
-                            var center_y = (int)(row[1] * img.Height);
+                            var row = data[i];
+                            var rowsscores = row.Skip(5).ToArray();
+                            var classId = rowsscores.ToList().IndexOf(rowsscores.Max());
+                            var confidence = rowsscores[classId];
+                            //Kiem tra nguong tin cay
+                            if (confidence > confThreshold)
+                            {
+                                var center_x = (int)(row[0] * img.Width);
+                                var center_y = (int)(row[1] * img.Height);
 
-                            var width = (int)(row[2] * img.Width);
-                            var height = (int)(row[3] * img.Height);
+                                var width = (int)(row[2] * img.Width);
+                                var height = (int)(row[3] * img.Height);
 
-                            var x = (int)(center_x - (width / 2));
-                            var y = (int)(center_y - (height / 2));
-                            Rectangle plate = new Rectangle(x, y, width, height);
-                            imageCrop = img.Clone();
-                            imageCrop.ROI = plate;
-                            PlateImagesList.Add(imageCrop);
-                            confidences.Add(confidence);
-                            //CvInvoke.Rectangle(img, new Rectangle(x, y, width, height), new MCvScalar(0, 0, 255), 2); //Ve khung hinh chua bien so
-                            ListRec.Add(plate);
+                                var x = (int)(center_x - (width / 2));
+                                var y = (int)(center_y - (height / 2));
+                                Rectangle plate = new Rectangle(x, y, width, height);
+                                imageCrop = img.Clone();
+                                imageCrop.ROI = plate;
+                                PlateImagesList.Add(imageCrop);
+                                confidences.Add(confidence);
+                                //CvInvoke.Rectangle(img, new Rectangle(x, y, width, height), new MCvScalar(0, 0, 255), 2); //Ve khung hinh chua bien so
+                                ListRec.Add(plate);
+                            }
                         }
                     }
-                }
+                
                 //Đưa ra kết quả các ảnh đã detect được
                 List<int> indices = new List<int>();
                 indices = DnnInvoke.NMSBoxes(ListRec.ToArray(), confidences.ToArray(), confThreshold, nms_threshold).ToList();
@@ -154,9 +159,9 @@ namespace Vietnamese_License_Plate_Recognition
                 {
                     OCRResult tempOCRResult = new OCRResult();
                     foreach (var indice in indices)
-                    {                     
-                        Image<Bgr, byte> imageResize = ResizeImage(PlateImagesList[indice], 900, 0);
-                        ocrResult = engine.DetectText(imageResize.ToBitmap());
+                    {
+                        //Image<Bgr, byte> imageResize = ResizeImage(PlateImagesList[indice], 100, 0);
+                        ocrResult = engine.DetectText(PlateImagesList[indice].ToBitmap());
                         List<string> arrayresult = new List<string>();
                         // Do dai toi da cua bien co the chua la 12 ky tu(bao gom ca cac ky tu "-")
                         if (ocrResult.Text.Length > tempOCRResult.Text.Length && ocrResult.Text != String.Empty && ocrResult.Text.Length <= 12)
@@ -237,7 +242,7 @@ namespace Vietnamese_License_Plate_Recognition
                 Model.SetPreferableTarget(Target.Cpu);              
                 string root = Environment.CurrentDirectory;
                 string modelPathroot = root + @"\en";
-                config.det_infer = modelPathroot + @"\ch_ppocr_server_v2.0_det_infer";
+                config.det_infer = modelPathroot + @"\ch_PP-OCRv3_det_infer";
                 config.cls_infer = modelPathroot + @"\ch_ppocr_mobile_v2.0_cls_infer";
                 config.rec_infer = modelPathroot + @"\ch_ppocr_server_v2.0_rec_infer";
                 config.keys = modelPathroot + @"\en_dict.txt";
