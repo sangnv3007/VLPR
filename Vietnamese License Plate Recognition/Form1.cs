@@ -94,14 +94,6 @@ namespace Vietnamese_License_Plate_Recognition
             //Thay đổi kich thước ảnh đầu vào
 
             var img = new Image<Bgr, byte>(path);
-            //img = ResizeImage(img, 1280, 0);
-            //if (img.Width % 32 != 0 || img.Height % 32 != 0)
-            //{
-            //    int imgDefaultSizeW = img.Width / 32 * 32;
-            //    int imgDefaultSizeH = img.Height / 32 * 32;
-            //    img = img.Resize(imgDefaultSizeW, imgDefaultSizeH, Inter.Cubic);
-            //}
-            //label6.Text = path;
 
             //Dự đoán vùng chứa biển số
 
@@ -158,11 +150,9 @@ namespace Vietnamese_License_Plate_Recognition
                 foreach (var indice in indices)
                 {
                     Image<Bgr, byte> imageResize = ResizeImage(PlateImagesList[indice], 192, 0);
-                    //Stopwatch swObj = new Stopwatch();
-                    //swObj.Start();
+                    CvInvoke.Imshow("imgcrop", imageResize.Mat);
+                    CvInvoke.WaitKey();
                     ocrResult = engine.DetectText(imageResize.ToBitmap());
-                    //swObj.Stop();
-                    //MessageBox.Show(Math.Round(swObj.Elapsed.TotalSeconds, 2).ToString() + " giây");
                     List<string> arrayresult = new List<string>();
                     // Do dai toi da cua bien co the chua la 12 ky tu(bao gom ca cac ky tu "-")
                     if (ocrResult.Text.Length <= tempOCRResult.Text.Length || String.IsNullOrEmpty(ocrResult.Text) || ocrResult.Text.Length > 12) continue;

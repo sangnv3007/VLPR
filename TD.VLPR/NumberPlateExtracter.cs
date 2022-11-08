@@ -117,7 +117,7 @@ namespace TD.VLPR
                     OCRResult tempOCRResult = new OCRResult();
                     foreach (var indice in indices)
                     {
-                        Image<Bgr, byte> imageResize = ResizeImage(PlateImagesList[indice], 600, 0);
+                        Image<Bgr, byte> imageResize = ResizeImage(PlateImagesList[indice], 192, 0);
                         ocrResult = engine.DetectText(imageResize.ToBitmap());
                         List<string> arrayresult = new List<string>();
                         // Do dai toi da cua bien co the chua la 12 ky tu(bao gom ca cac ky tu "-")
@@ -283,7 +283,7 @@ namespace TD.VLPR
                 Model.SetPreferableTarget(Target.Cpu);
                 string root = Environment.CurrentDirectory;
                 string modelPathroot = root + @"\en";
-                config.det_infer = modelPathroot + @"\Student";
+                config.det_infer = modelPathroot + @"\ch_PP-OCRv3_det_infer";
                 config.cls_infer = modelPathroot + @"\ch_ppocr_mobile_v2.0_cls_infer";
                 config.rec_infer = modelPathroot + @"\ch_ppocr_server_v2.0_rec_infer";
                 config.keys = modelPathroot + @"\en_dict.txt";
