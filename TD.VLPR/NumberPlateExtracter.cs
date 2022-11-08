@@ -283,7 +283,7 @@ namespace TD.VLPR
                 Model.SetPreferableTarget(Target.Cpu);
                 string root = Environment.CurrentDirectory;
                 string modelPathroot = root + @"\en";
-                config.det_infer = modelPathroot + @"\ch_PP-OCRv3_det_infer";
+                config.det_infer = modelPathroot + @"\Student";
                 config.cls_infer = modelPathroot + @"\ch_ppocr_mobile_v2.0_cls_infer";
                 config.rec_infer = modelPathroot + @"\ch_ppocr_server_v2.0_rec_infer";
                 config.keys = modelPathroot + @"\en_dict.txt";

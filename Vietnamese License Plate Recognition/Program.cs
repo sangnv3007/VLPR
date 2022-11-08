@@ -23,9 +23,9 @@ namespace Vietnamese_License_Plate_Recognition
             ///Run Apllication Form
             ///</summary>
             ///
-            //Application.EnableVisualStyles();
-            //Application.SetCompatibleTextRenderingDefault(false);
-            //Application.Run(new Form1());
+            Application.EnableVisualStyles();
+            Application.SetCompatibleTextRenderingDefault(false);
+            Application.Run(new Form1());
 
             ///<summary>
             ///Run Console Command
@@ -40,7 +40,7 @@ namespace Vietnamese_License_Plate_Recognition
 
             //var extracter = new NumberPlateExtracter();
             //string root = Environment.CurrentDirectory;
-            //string path = root + @"\test1 (3).jpg";
+            //string path = root + @"\test1 (1).jpg";
             //var img = new Image<Bgr, byte>(path);
             ////Thời gian bắt đầu
             //Stopwatch swObj = new Stopwatch();
