@@ -24,7 +24,7 @@ namespace Vietnamese_License_Plate_Recognition
     {
         Net Model = null;
         string PathConfig = "yolov4-tiny-custom.cfg";
-        string PathWeights = "yolov4-tiny-custom_final.weights";
+        string PathWeights = "yolov4-tiny-custom_last.weights";
         OCRParameter oCRParameter = new OCRParameter();
         OCRModelConfig config = new OCRModelConfig();
         OCRResult ocrResult = new OCRResult();
@@ -136,22 +136,20 @@ namespace Vietnamese_License_Plate_Recognition
                         PlateImagesList.Add(imageCrop);
                         confidences.Add(confidence);
                         //CvInvoke.Rectangle(img, new Rectangle(x, y, width, height), new MCvScalar(0, 0, 255), 2); //Ve khung hinh chua bien so
+                        //CvInvoke.Imshow("Anhrec", img.Mat);
                         ListRec.Add(plate);
                     }
                 }
             }
 
             //Đưa ra kết quả các ảnh đã detect được
-            List<int> indices = new List<int>();
-            indices = DnnInvoke.NMSBoxes(ListRec.ToArray(), confidences.ToArray(), confThreshold, nms_threshold).ToList();
+            List<int> indices = DnnInvoke.NMSBoxes(ListRec.ToArray(), confidences.ToArray(), confThreshold, nms_threshold).ToList();
             if (indices.Count > 0)
             {
                 OCRResult tempOCRResult = new OCRResult();
                 foreach (var indice in indices)
                 {
                     Image<Bgr, byte> imageResize = ResizeImage(PlateImagesList[indice], 192, 0);
-                    CvInvoke.Imshow("imgcrop", imageResize.Mat);
-                    CvInvoke.WaitKey();
                     ocrResult = engine.DetectText(imageResize.ToBitmap());
                     List<string> arrayresult = new List<string>();
                     // Do dai toi da cua bien co the chua la 12 ky tu(bao gom ca cac ky tu "-")

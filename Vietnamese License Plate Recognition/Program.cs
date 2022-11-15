@@ -31,11 +31,17 @@ namespace Vietnamese_License_Plate_Recognition
             ///Run Console Command
             ///</summary>
             //var extracter = new NumberPlateExtracter();
-            //foreach (string file in Directory.EnumerateFiles(@"D:\Download Chorme\Thang8\Thang_8\DataTrain03", "*.jpg"))
+            //foreach (string file in Directory.EnumerateFiles(@"D:\Download Chorme\CarTGMT\CarTGMT", "*.jpg"))
             //{
             //    ResultLP resultobj = extracter.ProcessImage(file);
             //    string results = file + "\t" + resultobj.textPlate + "\t" + resultobj.accPlate;
-            //    File.AppendAllText("Result.txt", results + "\n");
+            //    Console.WriteLine("Done file " + file);
+            //    File.AppendAllText("ResultLP.txt", results + "\n");
+            //    if(resultobj.accPlate == 0)
+            //    {
+            //        File.Copy(file, @"D:\Download Chorme\AnhtoancanhT8\NotFound\" + Path.GetFileName(file));
+            //        File.Delete(file);
+            //    }    
             //}
 
             //var extracter = new NumberPlateExtracter();

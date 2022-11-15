@@ -225,7 +225,7 @@ namespace TD.VLPR
                     OCRResult tempOCRResult = new OCRResult();
                     foreach (var indice in indices)
                     {
-                        Image<Bgr, byte> imageResize = ResizeImage(PlateImagesList[indice], 600, 0);
+                        Image<Bgr, byte> imageResize = ResizeImage(PlateImagesList[indice], 192, 0);
                         ocrResult = engine.DetectText(imageResize.ToBitmap());
                         List<string> arrayresult = new List<string>();
                         // Do dai toi da cua bien co the chua la 12 ky tu(bao gom ca cac ky tu "-")
@@ -249,7 +249,7 @@ namespace TD.VLPR
                             if (arrayresult.Count != 0)
                             {
                                 textPlates = string.Join("-", arrayresult);
-                                CvInvoke.Imwrite("imgcropColor.jpg", PlateImagesList[indice]);
+                                //CvInvoke.Imwrite("imgcropColor.jpg", PlateImagesList[indice]);
                                 LPReturn obj = new LPReturn();
                                 result = obj.Result(textPlates, true, accuracy, PlateImagesList[indice]);
                             }
