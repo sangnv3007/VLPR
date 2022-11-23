@@ -117,7 +117,7 @@ namespace TD.VLPR
                     OCRResult tempOCRResult = new OCRResult();
                     foreach (var indice in indices)
                     {
-                        Image<Bgr, byte> imageResize = ResizeImage(PlateImagesList[indice], 192, 0);
+                        Image<Bgr, byte> imageResize = ResizeImage(PlateImagesList[indice], 250, 0);
                         ocrResult = engine.DetectText(imageResize.ToBitmap());
                         List<string> arrayresult = new List<string>();
                         // Do dai toi da cua bien co the chua la 12 ky tu(bao gom ca cac ky tu "-")
@@ -141,7 +141,7 @@ namespace TD.VLPR
                             if (arrayresult.Count != 0)
                             {
                                 textPlates = string.Join("-", arrayresult);            
-                                CvInvoke.Imwrite("imgcropColor.jpg", PlateImagesList[indice]);
+                                //CvInvoke.Imwrite("imgcropColor.jpg", PlateImagesList[indice]);
                                 LPReturn obj = new LPReturn();
                                 result = obj.Result(textPlates, true, accuracy, PlateImagesList[indice]);
                             }
@@ -225,7 +225,7 @@ namespace TD.VLPR
                     OCRResult tempOCRResult = new OCRResult();
                     foreach (var indice in indices)
                     {
-                        Image<Bgr, byte> imageResize = ResizeImage(PlateImagesList[indice], 192, 0);
+                        Image<Bgr, byte> imageResize = ResizeImage(PlateImagesList[indice], 250, 0);
                         ocrResult = engine.DetectText(imageResize.ToBitmap());
                         List<string> arrayresult = new List<string>();
                         // Do dai toi da cua bien co the chua la 12 ky tu(bao gom ca cac ky tu "-")
@@ -297,7 +297,7 @@ namespace TD.VLPR
         }
         public static bool isValidPlatesNumber(string inputPlatesNumber)
         {
-            string strRegex = @"(^[0-9]{2}-?[0-9A-Z]{1,3}$)|(^[A-Z0-9]{2,5}$)|(^[0-9]{2,3}-[0,9]{2}$)|(^[A-Z0-9]{2,3}-?[0-9]{4,5}$)|(^[A-Z]{2}-?[0-9]{0,4}$)|(^[0-9]{2}-?[A-Z0-9]{2,3}-?[A-Z0-9]{2,3}-?[0-9]{2}$)|(^[A-Z]{2}-?[0-9]{2}-?[0-9]{2}$)|(^[0-9]{3}-?[A-Z0-9]{2}$)";
+            string strRegex = @"(^[A-Z0-9]{2}-?[A-Z0-9]{1,3}-?[A-Z0-9]{1,2}$)|(^[A-Z0-9]{2,5}$)|(^[0-9]{2,3}-[0,9]{2}$)|(^[A-Z0-9]{2,3}-?[0-9]{4,5}$)|(^[A-Z]{2}-?[0-9]{0,4}$)|(^[0-9]{2}-?[A-Z0-9]{2,3}-?[A-Z0-9]{2,3}-?[0-9]{2}$)|(^[A-Z]{2}-?[0-9]{2}-?[0-9]{2}$)|(^[0-9]{3}-?[A-Z0-9]{2}$)";
             Regex re = new Regex(strRegex);
             if (re.IsMatch(inputPlatesNumber))
                 return (true);

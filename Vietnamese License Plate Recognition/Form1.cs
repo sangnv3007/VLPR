@@ -128,8 +128,8 @@ namespace Vietnamese_License_Plate_Recognition
                         var width = (int)(row[2] * img.Width);
                         var height = (int)(row[3] * img.Height);
 
-                        var x = (int)(center_x - (width / 2));
-                        var y = (int)(center_y - (height / 2));
+                        var x = center_x - (width / 2);
+                        var y = center_y - (height / 2);
                         Rectangle plate = new Rectangle(x, y, width, height);
                         imageCrop = img.Clone();
                         imageCrop.ROI = plate;
@@ -149,7 +149,7 @@ namespace Vietnamese_License_Plate_Recognition
                 OCRResult tempOCRResult = new OCRResult();
                 foreach (var indice in indices)
                 {
-                    Image<Bgr, byte> imageResize = ResizeImage(PlateImagesList[indice], 192, 0);
+                    Image<Bgr, byte> imageResize = ResizeImage(PlateImagesList[indice], width:250, 0);
                     ocrResult = engine.DetectText(imageResize.ToBitmap());
                     List<string> arrayresult = new List<string>();
                     // Do dai toi da cua bien co the chua la 12 ky tu(bao gom ca cac ky tu "-")
@@ -175,7 +175,7 @@ namespace Vietnamese_License_Plate_Recognition
                     {
                         textPlates = string.Join("-", arrayresult);
                         pictureBox3.Image = PlateImagesList[indice].ToBitmap();
-                        CvInvoke.Imwrite("imgcropColor.jpg", PlateImagesList[indice]);
+                        CvInvoke.Imwrite("imgcropColor.jpg", imageResize);
                         textBox1.Text = textPlates;
                         LPReturnForm obj = new LPReturnForm();
                         ResultLPForm resultobj = obj.Result(textPlates, true, accuracy);
@@ -184,6 +184,7 @@ namespace Vietnamese_License_Plate_Recognition
                     else
                     {
                         pictureBox3.Image = PlateImagesList[indice].ToBitmap();
+                        CvInvoke.Imwrite("imgcropColor.jpg", imageResize);
                         LPReturnForm obj = new LPReturnForm();
                         ResultLPForm resultobj = obj.Result("Null", false, 0);
                         label2.Text = "Biển số: " + resultobj.textPlate + ", status: " + resultobj.statusPlate + ", acc: " + resultobj.accPlate;
@@ -216,7 +217,7 @@ namespace Vietnamese_License_Plate_Recognition
         // method containing the regex
         public static bool isValidPlatesNumberForm(string inputPlatesNumber)
         {
-            string strRegex = @"(^[A-Z0-9]{2}-?[A-Z0-9]{1,3}$)|(^[A-Z0-9]{2,5}$)|(^[0-9]{2,3}-[0,9]{2}$)|(^[A-Z0-9]{2,3}-?[0-9]{4,5}$)|(^[A-Z]{2}-?[0-9]{0,4}$)|(^[0-9]{2}-?[A-Z0-9]{2,3}-?[A-Z0-9]{2,3}-?[0-9]{2}$)|(^[A-Z]{2}-?[0-9]{2}-?[0-9]{2}$)|(^[0-9]{3}-?[A-Z0-9]{2}$)";
+            string strRegex = @"(^[A-Z0-9]{2}-?[A-Z0-9]{0,3}-?[A-Z0-9]{1,2}$)|(^[A-Z0-9]{2,5}$)|(^[0-9]{2,3}-[0,9]{2}$)|(^[A-Z0-9]{2,3}-?[0-9]{4,5}$)|(^[A-Z]{2}-?[0-9]{0,4}$)|(^[0-9]{2}-?[A-Z0-9]{2,3}-?[A-Z0-9]{2,3}-?[0-9]{2}$)|(^[A-Z]{2}-?[0-9]{2}-?[0-9]{2}$)|(^[0-9]{3}-?[A-Z0-9]{2}$)";
             Regex re = new Regex(strRegex);
             if (re.IsMatch(inputPlatesNumber))
                 return (true);
@@ -270,7 +271,7 @@ namespace Vietnamese_License_Plate_Recognition
                 dim.Width = width;
                 dim.Height = (int)(h * r);
             }
-            Image<Bgr, byte> imageReszie = imageOriginal.Resize(dim.Width, dim.Height, Inter.Cubic);
+            Image<Bgr, byte> imageReszie = imageOriginal.Resize(dim.Width, dim.Height, Inter.Area);
             return imageReszie;
         }
         public static Image<Bgr, byte> rotateImage(Image<Bgr, byte> img)

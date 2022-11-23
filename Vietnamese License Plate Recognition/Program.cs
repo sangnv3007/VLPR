@@ -30,20 +30,28 @@ namespace Vietnamese_License_Plate_Recognition
             ///<summary>
             ///Run Console Command
             ///</summary>
+            ///
+            //int i = 1;
             //var extracter = new NumberPlateExtracter();
-            //foreach (string file in Directory.EnumerateFiles(@"D:\Download Chorme\CarTGMT\CarTGMT", "*.jpg"))
+            //foreach (string file in Directory.EnumerateFiles(@"D:\Thang_8\Data\AnhNhanDang", "*.jpg"))
             //{
             //    ResultLP resultobj = extracter.ProcessImage(file);
-            //    string results = file + "\t" + resultobj.textPlate + "\t" + resultobj.accPlate;
-            //    Console.WriteLine("Done file " + file);
-            //    File.AppendAllText("ResultLP.txt", results + "\n");
-            //    if(resultobj.accPlate == 0)
+            //    Console.WriteLine("Done file " + i.ToString() + "_" + file);             
+            //    if (resultobj.textPlate != null)
             //    {
-            //        File.Copy(file, @"D:\Download Chorme\AnhtoancanhT8\NotFound\" + Path.GetFileName(file));
-            //        File.Delete(file);
-            //    }    
+            //        if (resultobj.textPlate == "Null" || (resultobj.accPlate <= 0.9 && resultobj.accPlate > 0))
+            //        {
+            //            //CvInvoke.Imwrite(@"D:\Thang_8\Data\imgCrop\LP_" + i.ToString() + ".jpg", resultobj.imagePlate);
+            //            //i++;
+            //            string results = file + "\t" + resultobj.textPlate + "\t" + resultobj.accPlate;
+            //            File.AppendAllText("ResultLP.txt", results + "\n");
+            //            File.Copy(file, @"D:\Thang_8\Data\AnhNhanDang\TestDLL\" + Path.GetFileName(file));
+            //            File.Delete(file);
+            //        }
+            //    }
+            //    i++;
             //}
-
+            ///
             //var extracter = new NumberPlateExtracter();
             //string root = Environment.CurrentDirectory;
             //string path = root + @"\test1 (1).jpg";
