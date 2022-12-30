@@ -54,9 +54,9 @@ namespace Vietnamese_License_Plate_Recognition
             ///
             //var extracter = new NumberPlateExtracter();
             //string root = Environment.CurrentDirectory;
-            //string path = root + @"\test1 (1).jpg";
+            //string path = @"D:\Download Chorme\CarTGMT\CarTGMT\DataLP (707).jpg";
             //var img = new Image<Bgr, byte>(path);
-            ////Thời gian bắt đầu
+            //Thời gian bắt đầu
             //Stopwatch swObj = new Stopwatch();
             //swObj.Start();
             //ResultLP resultobj = extracter.ProcessImage(img.Mat);
@@ -65,15 +65,15 @@ namespace Vietnamese_License_Plate_Recognition
             //Stopwatch swObj1 = new Stopwatch();
             //swObj1.Start();
             //ResultLP resultobj1 = extracter.ProcessImage(path);
-            ////Thời gian kết thúc
+            //Thời gian kết thúc
             //swObj1.Stop();
-            ////Tổng thời gian thực hiện               
+            //Tổng thời gian thực hiện               
             //Console.WriteLine(Math.Round(swObj.Elapsed.TotalSeconds, 2).ToString() + " giây");
             //Console.WriteLine(Math.Round(swObj1.Elapsed.TotalSeconds, 2).ToString() + " giây");
             //Console.WriteLine("TextPlate    : {0}", resultobj.textPlate);
             //Console.WriteLine("TextPlate    : {0}", resultobj1.textPlate);
             //File.AppendAllText("Result.txt", Math.Round(swObj.Elapsed.TotalSeconds, 2).ToString() + " giây" + "\n" +
-            //                    Math.Round(swObj1.Elapsed.TotalSeconds, 2).ToString() + " giây");
+            //Math.Round(swObj1.Elapsed.TotalSeconds, 2).ToString() + " giây");
         }
     }
 }
