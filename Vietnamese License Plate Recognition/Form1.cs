@@ -19,22 +19,35 @@ using PaddleOCRSharp;
 using System.Text.RegularExpressions;
 using TD.VLPR;
 using System.Threading;
-
+using Tesseract;
 namespace Vietnamese_License_Plate_Recognition
 {
     public partial class Form1 : Form
     {
+        //Config YOLO
         Net Model = null;
         string PathConfig = "yolov4-tiny-custom.cfg";
         string PathWeights = "yolov4-tiny-custom_final.weights";
+        //string PathClassNames = "classes.names";
         OCRParameter oCRParameter = new OCRParameter();
-        OCRModelConfig config = new OCRModelConfig();
+        OCRModelConfig config = new OCRModelConfig(); 
         OCRResult ocrResult = new OCRResult();
         PaddleOCREngine engine = null;
-        int number_failed = 0;
+        int number_failed = 0; //Số lượng nhận dạng thất bại
+        //
+        System.Timers.Timer timerAutoRec = new System.Timers.Timer(1000); //Chu kỳ nhận diện biển số xe. Mặc định 1000 mili giây
+        System.Timers.Timer timerAutoMove = new System.Timers.Timer(1); //Chu kỳ phát hiện chuyển động. Mặc định 1 mili giây
+        bool isStop = true; //Cờ bật/tắt video
+        VideoCapture capture = new VideoCapture(0, VideoCapture.API.DShow); //Khởi tạo video capture
+        Rectangle rec = new Rectangle();
+        Point startPoint = new Point();
+        Point endPoint = new Point();
+        bool isDrawing, isMouseDown, isMoveMent; //Các biến xử lý vẽ bbox trên PictureBox
+        int MotionThreshold = 16; //varThreshold: Ngưỡng để xác định liệu pixel có được coi là nền hay không
+        IBackgroundSubtractor backgroundSubtractor; // Khởi tạo đối tượng IBackgroundSubtractor
         public Form1()
         {
-            InitializeComponent();
+            InitializeComponent(); 
         }
         private void button1_Click(object sender, EventArgs e)
         {
@@ -59,13 +72,39 @@ namespace Vietnamese_License_Plate_Recognition
 
                 //Thời gian bắt đầu
                 swObj.Start();
-
-                ProcessImage(open.FileName);
-
+                //TesseractOCR(open.FileName);         
+                ProcessImage(open.FileName);      
                 //Thời gian kết thúc
                 swObj.Stop();
+                Console.WriteLine(Math.Round(swObj.Elapsed.TotalSeconds, 2).ToString() + " giây");
                 //Tổng thời gian thực hiện               
                 label5.Text = Math.Round(swObj.Elapsed.TotalSeconds, 2).ToString() + " giây";
+            }
+        }
+        public void TesseractOCR(string path)
+        {
+            // Load the image of the license plate
+            Bitmap licensePlate = new Bitmap(path);
+
+            // Create a Tesseract OCR engine
+
+            using (var engine = new TesseractEngine(@"./tessdata", "td", EngineMode.Default))
+            {
+                // Set the page segmentation mode to automatic
+                engine.SetVariable("tessedit_pageseg_mode", "auto");
+
+                // Set the whitelist to alphanumeric characters only
+                engine.SetVariable("tessedit_char_whitelist", "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ");
+
+                // Set the image to recognize
+                using (var page = engine.Process(licensePlate))
+                {
+                    // Get the recognized text
+                    var text = page.GetText();
+                    //MessageBox.Show(text);
+                    // Print the recognized text
+                    Console.WriteLine("License plate: " + text);
+                }
             }
         }
         public static List<float[]> ArrayTo2DList(Array array)
@@ -92,7 +131,7 @@ namespace Vietnamese_License_Plate_Recognition
         public void ProcessImage(string path)
         {
             string textPlates = "";
-            float confThreshold = 0.8f;
+            float confThreshold = 0.5f;
 
             //Thay đổi kich thước ảnh đầu vào
 
@@ -137,8 +176,8 @@ namespace Vietnamese_License_Plate_Recognition
                         PlateImagesList.Add(imageCrop);
                         confidences.Add(confidence);
                         //CvInvoke.Rectangle(img, new Rectangle(x, y, width, height), new MCvScalar(0, 0, 255), 2); //Ve khung hinh chua bien so
-                        CvInvoke.Imshow("Anhrec", imageCrop.Mat);
-                        CvInvoke.WaitKey();
+                        //CvInvoke.Imshow("Anhrec", imageCrop.Mat);
+                        //CvInvoke.WaitKey();
                         //ListRec.Add(plate);
                     }
                 }
@@ -393,21 +432,455 @@ namespace Vietnamese_License_Plate_Recognition
             label7.Refresh();
             label9.Refresh();
         }
-        //Button previous image
+        //Button chuyển về ảnh phía trước
         private void button3_Click(object sender, EventArgs e)
         {
             if (ListBoxFIle.SelectedIndex > 0)
             {
-                ListBoxFIle.SelectedIndex = ListBoxFIle.SelectedIndex - 1;
+                ListBoxFIle.SelectedIndex--;
             }
         }
-        //Button next image
+        //Button chuyển về ảnh tiếp theo
         private void button4_Click(object sender, EventArgs e)
         {
             if (ListBoxFIle.SelectedIndex < ListBoxFIle.Items.Count - 1)
             {
-                ListBoxFIle.SelectedIndex = ListBoxFIle.SelectedIndex + 1;
+                ListBoxFIle.SelectedIndex ++;
             }
+        }
+
+        private void tabControl1_SelectedIndexChanged(object sender, EventArgs e)
+        {
+            int tabText = tabControl1.SelectedIndex;
+            if(tabText == 2)
+            {
+                AutoRecLPVideo();
+            }    
+            if(tabText==3)
+            {
+                AutoMovDetectionVideo();            
+            }
+        }
+        private void AutoMovDetectionVideo()
+        {
+            backgroundSubtractor = new BackgroundSubtractorMOG2(varThreshold: MotionThreshold);
+            //Ẩn các nút xác nhận và xoá vùng định nghĩa
+            btn_clearRec2.Enabled = false;
+            btn_confirm2.Enabled = false;
+            Mat frame = new Mat();    
+            // Lắng nghe sự kiện bàn phím trực tiếp từ ứng dụng Windows Forms
+            this.KeyPreview = true;
+            this.KeyPress += (sender, e) =>
+            {
+                if (e.KeyChar == 'q' || e.KeyChar == (char)Keys.Escape)
+                {
+                    isStop = false;
+                    Application.Exit();
+                }
+            };
+            timerAutoMove.Elapsed += (sender, e) => {  
+                
+                Mat frame_temp = capture.QueryFrame();
+                Mat smoothFrame = new Mat();
+                CvInvoke.GaussianBlur(frame_temp, smoothFrame, new Size(3, 3), 1);
+                // Thực hiện phép trừ nền
+                Mat foregroundMask = new Mat();
+                backgroundSubtractor.Apply(smoothFrame, foregroundMask);
+                //Invoke((MethodInvoker)(() => CvInvoke.Imshow("foregroundMask1", foregroundMask)));
+                // Điều chỉnh ngưỡng mặt nạ nền
+                CvInvoke.Threshold(foregroundMask, foregroundMask, 200, 240, ThresholdType.Binary);
+                // Hiệu chỉnh hình ảnh nhị phân
+                Mat kernel = Mat.Ones(7, 3, DepthType.Cv8U, 1);
+                CvInvoke.MorphologyEx(foregroundMask, foregroundMask, MorphOp.Close, kernel, new Point(-1, -1), 1, BorderType.Reflect, new MCvScalar(0));
+                // Phát hiện contours và vẽ các bbox
+                //Invoke((MethodInvoker)(() => CvInvoke.Imshow("foregroundMask2", foregroundMask)));
+                VectorOfVectorOfPoint contours = new VectorOfVectorOfPoint();
+                CvInvoke.FindContours(foregroundMask, contours, null, RetrType.External, ChainApproxMethod.ChainApproxSimple);
+                int minArea = 900;//Kích thước vùng nhỏ nhất
+                //Lấy ra danh sách các contours
+
+                for (int i = 0; i < contours.Size; i++)
+                {
+                    var bbox = CvInvoke.BoundingRectangle(contours[i]);
+                    var area = bbox.Width * bbox.Height;
+                    bool isBboxInRec = bbox.X >= rec.X && bbox.Y >= rec.Y && (bbox.X + bbox.Width) <= (rec.X + rec.Width) && (bbox.Y + bbox.Height) <= (rec.Y + rec.Height);// Kiểm tra bbox có trong vùng định ngĩa không?
+                    if (area > minArea)
+                    {
+                        if (isBboxInRec && bbox != null)
+                        {
+                            isMoveMent = true;                          
+                            //CvInvoke.Rectangle(frame_temp, bbox, new MCvScalar(0, 255, 0), 2);                          
+                        }
+                        else
+                        {
+                            isMoveMent = false;
+                        }
+                    }
+
+                }
+                ptb_movementDet.Image = frame_temp.ToBitmap();
+            };
+            timerAutoMove.Start();         
+            while (isStop)
+            {
+                capture.Read(frame);
+                ptb_movementDet.Image = frame.ToBitmap();
+                Application.DoEvents();
+            }
+            timerAutoMove.Stop();
+            capture.Dispose();
+            CvInvoke.DestroyAllWindows();
+        }
+        public ResultLP DetectorVideo(Mat frame, float confThreshold)
+        {
+            //Định nghĩa các biến và đối tượng trả về
+            ResultLP result = new ResultLP();
+            string textPlates = string.Empty;
+            VectorOfMat output = new VectorOfMat();
+            double scale = 1 / 255f;
+            List<float> scores = new List<float>();
+            List<Image<Bgr, byte>> PlateImagesList = new List<Image<Bgr, byte>>();
+            Image<Bgr, byte> image = frame.ToImage<Bgr, byte>();
+            //Lấy kết quả trả về output 
+            image.ROI = rec;
+            Image<Bgr, byte> temp = image.CopyBlank();
+            image.CopyTo(temp);
+            //image.ROI = Rectangle.Empty;
+            //Console.WriteLine("Image width: {0}, Image height: {1}", temp.Width, temp.Height);
+            var input = DnnInvoke.BlobFromImage(temp, scale, new Size(416, 416), new MCvScalar(0, 0, 0), swapRB: true, crop: false) ;
+            Model.SetInput(input);
+            Model.Forward(output, Model.UnconnectedOutLayersNames);
+
+            //Lấy ra các biển số thoả mãn confThreshold
+            for (int i = 0; i < output.Size; i++)
+            {
+                var mat = output[i];
+                var data = ArrayTo2DList(mat.GetData());
+                for (int j = 0; j < data.Count; j++)
+                {
+                    var row = data[j];
+                    var rowsscores = row.Skip(5).ToArray();
+                    var classId = rowsscores.ToList().IndexOf(rowsscores.Max());
+                    var confidence = rowsscores[classId];
+                    //Kiểm tra ngưỡng
+                    if (confidence > confThreshold)
+                    {
+                        var centerX = (int)(row[0] * temp.Width);
+                        var centerY = (int)(row[1] * temp.Height);
+                        var boxWidth = (int)(row[2] * temp.Width);
+                        var boxHeight = (int)(row[3] * temp.Height);
+
+                        var x = (int)(centerX - (boxWidth / 2));
+                        var y = (int)(centerY - (boxHeight / 2));
+                        if(x > 0 && y > 0)
+                        {
+                            Rectangle plate = new Rectangle(x, y, boxWidth, boxHeight);
+                            Image<Bgr, byte> roiImage = temp.Clone();
+                            roiImage.ROI = plate;
+                            PlateImagesList.Add(roiImage);
+                            scores.Add(confidence);
+                        }                        
+                    }
+
+                }
+            }
+            //Đưa ra kết quả nhận diện biển số
+            if (scores.Count > 0)
+            {
+                var max_indices = scores.IndexOf(scores.Max());
+                //OCR bien so co confidence cao nhat
+                Image<Bgr, byte> imageResize = ResizeImage(PlateImagesList[max_indices], 250, 0);
+                ocrResult = engine.DetectText(imageResize.ToBitmap());
+                List<string> arrayresult = new List<string>();
+                if (ocrResult.Text != String.Empty && ocrResult.Text.Length <= 12)
+                {
+                    double accuracy = 1;
+                    for (int j = 0; j < ocrResult.TextBlocks.Count; j++)
+                    {
+                        string TextBlocksPlate = ocrResult.TextBlocks[j].Text;
+                        TextBlocksPlate = Regex.Replace(TextBlocksPlate, @"[^A-Z0-9\-]|^-|-$", "");
+                        if (isValidPlatesNumberForm(TextBlocksPlate))
+                        {
+                            if (ocrResult.TextBlocks[j].Score < accuracy)
+                            {
+                                accuracy = Math.Round(ocrResult.TextBlocks[j].Score, 2);
+                            }
+                            arrayresult.Add(TextBlocksPlate);
+                        }
+                    }
+                    if (arrayresult.Count != 0)
+                    {
+                        textPlates = string.Join("-", arrayresult);
+                        //CvInvoke.Imwrite("imgcropColor.jpg", PlateImagesList[0]);
+                        LPReturn obj = new LPReturn();
+                        result = obj.Result(textPlates, true, accuracy, PlateImagesList[0]);
+                    }
+                    else
+                    {
+                        LPReturn obj = new LPReturn();
+                        result = obj.Result("Null", false, 0, PlateImagesList[0]);
+                    }
+                }
+            }
+            else
+            {
+                LPReturn obj = new LPReturn();
+                result = obj.Result("No license plate found", false, 0, image);
+            }
+            return result;
+        }
+        public void AutoRecLPVideo()
+        {
+            //Config Yolov4
+            Model = DnnInvoke.ReadNetFromDarknet(PathConfig, PathWeights);
+            Model.SetPreferableBackend(Emgu.CV.Dnn.Backend.OpenCV);
+            Model.SetPreferableTarget(Target.Cpu);
+            Mat frame = new Mat();
+            //var classLabels = File.ReadAllLines(PathClassNames); //Lấy ra các classes YOLO
+            //var vc = new VideoCapture(0, VideoCapture.API.DShow);          
+            VectorOfMat output = new VectorOfMat();           
+            List<float> scores = new List<float>();
+            //Ẩn các nút khi chưa vẽ Rec
+            btn_clearRec1.Enabled = false;
+            btn_confirm1.Enabled = false;
+            //string pathSave = Environment.CurrentDirectory + @"\captures";        
+            float confThreshold = 0.8f;// Ngưỡng tin cậy
+            // Lắng nghe sự kiện bàn phím trực tiếp từ ứng dụng Windows Forms
+            this.KeyPreview = true;
+            this.KeyPress += (sender, e) =>
+            {
+                if (e.KeyChar == 'q' || e.KeyChar == (char)Keys.Escape)
+                {
+                    isStop = false;                   
+                    Application.Exit();
+                }
+            };
+            timerAutoRec.Elapsed += (sender, e) =>
+            {
+                if (capture != null) { 
+                    capture.Read(frame);            
+                    //Đo thời gian chạy nhận diện biển số
+                    Stopwatch swObj = new Stopwatch();
+                    swObj.Start();
+                    ResultLP resultobj = DetectorVideo(frame, confThreshold);
+                    //Thời gian kết thúc
+                    swObj.Stop();        
+                    if (resultobj.accPlate != 0)
+                    {
+                        ptb_LPImage.Image = resultobj.imagePlate.ToBitmap();
+                        tb_LPText.Invoke((MethodInvoker)(() => tb_LPText.Text = resultobj.textPlate));
+                        lb_LPTimeRec.Invoke((MethodInvoker)(() => lb_LPTimeRec.Text = Math.Round(swObj.Elapsed.TotalSeconds, 2).ToString() + " giây"));                
+                    }  
+                } 
+            };
+            timerAutoRec.Start();
+            while (isStop)
+            {
+                capture.Read(frame);
+                ptb_Video.Image = frame.ToBitmap();
+                Application.DoEvents();
+            }
+            timerAutoRec.Stop();
+            capture.Dispose();
+            CvInvoke.DestroyAllWindows();
+        }
+
+        private void chb_autotime_CheckedChanged(object sender, EventArgs e)
+        {
+            if (chb_autotime.Checked)
+            {
+                DialogResult res = MessageBox.Show("Bạn chắc chắn muốn bật chức năng này", "Xác nhận thông tin", MessageBoxButtons.OKCancel);
+                if (res == DialogResult.Cancel)
+                {
+                    chb_autotime.Checked = false;
+                }
+                else
+                {
+                    timerAutoRec.Interval = (double)numeric_time.Value;
+                }
+            }
+            
+        }
+
+        private void bt_clearRec_Click(object sender, EventArgs e)
+        {
+            btn_drawRegion.Enabled = true;
+            btn_clearRec1.Enabled = false;
+            startPoint = new Point(0, 0);
+            endPoint = new Point(0, 0);
+        }
+
+        private void btn_drawRegion_Click(object sender, EventArgs e)
+        {
+            isDrawing = true;
+            btn_confirm1.Enabled = true;
+            btn_drawRegion.Enabled = false;
+        }
+        private void ptb_Video_MouseDown(object sender, MouseEventArgs e)
+        {
+            if(isDrawing)
+            {
+                isMouseDown = true;
+                startPoint = e.Location;
+            }    
+        }
+
+        private void ptb_Video_MouseUp(object sender, MouseEventArgs e)
+        {
+            if(isDrawing)
+            {
+                if (isMouseDown)
+                {
+                    endPoint = e.Location;
+                    isMouseDown = false;
+                }
+            }    
+            
+        }
+
+        private void ptb_Video_Paint(object sender, PaintEventArgs e)
+        {
+            rec.X = Math.Min(startPoint.X, endPoint.X);
+            rec.Y = Math.Min(startPoint.Y, endPoint.Y);
+            rec.Width = Math.Abs(startPoint.X - endPoint.X);
+            rec.Height = Math.Abs(startPoint.Y - endPoint.Y);
+            if (rec != null)
+            {
+                e.Graphics.DrawRectangle(new Pen(Color.Green, 2), rec);
+                e.Graphics.DrawString(rec.Width.ToString() + "x" + rec.Height.ToString(), new Font("Arial", 12), Brushes.Red, new PointF(rec.X, rec.Y + 10));
+            }                   
+        }
+
+        private void ptb_Video_MouseMove(object sender, MouseEventArgs e)
+        {
+            if(isDrawing)
+            {
+                if (isMouseDown)
+                {
+                    endPoint = e.Location;
+                }
+            }    
+        }
+
+        private void btn_confirm_Click(object sender, EventArgs e)
+        {
+            DialogResult res = MessageBox.Show("Xác nhận vùng định nghĩa là " + rec.Width.ToString() + "x" + rec.Height.ToString(), "Xác nhận thông tin", MessageBoxButtons.OKCancel);
+            if (res == DialogResult.OK)
+            {
+                isDrawing = false;
+                btn_confirm1.Enabled = false;
+                btn_clearRec1.Enabled = true;
+                MessageBox.Show("Lưu ý: Nên vẽ chiều rộng lơn hơn 320 và chiều cao lớn hơn 240 thì mới có tác dụng cho chức năng này !", "Warning", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+            }    
+        }
+
+        private void btn_defineReg_Click(object sender, EventArgs e)
+        {
+            isDrawing = true;
+            btn_confirm2.Enabled = true;
+            btn_defineReg.Enabled = false;
+        }
+
+        private void ptb_movementDet_MouseDown(object sender, MouseEventArgs e)
+        {
+            if (isDrawing)
+            {
+                isMouseDown = true;
+                startPoint = e.Location;
+            }
+        }
+
+        private void ptb_movementDet_MouseUp(object sender, MouseEventArgs e)
+        {
+            if (isDrawing)
+            {
+                if (isMouseDown)
+                {
+                    endPoint = e.Location;
+                    isMouseDown = false;
+                }
+            }
+        }
+
+        private void ptb_movementDet_MouseMove(object sender, MouseEventArgs e)
+        {
+            if (isDrawing)
+            {
+                if (isMouseDown)
+                {
+                    endPoint = e.Location;
+                }
+            }
+        }
+
+        private void ptb_movementDet_Paint(object sender, PaintEventArgs e)
+        {
+            //Console.WriteLine(isMoveMent.ToString());
+            rec.X = Math.Min(startPoint.X, endPoint.X);
+            rec.Y = Math.Min(startPoint.Y, endPoint.Y);
+            rec.Width = Math.Abs(startPoint.X - endPoint.X);
+            rec.Height = Math.Abs(startPoint.Y - endPoint.Y);
+            if(isMoveMent)
+            {
+                e.Graphics.DrawRectangle(new Pen(Color.Red, 2), rec);
+            }
+            else
+            {
+                e.Graphics.DrawRectangle(new Pen(Color.Green, 2), rec);
+                e.Graphics.DrawString(rec.Width.ToString() + "x" + rec.Height.ToString(), new Font("Arial", 12), Brushes.Red, new PointF(rec.X, rec.Y + 10));
+            }
+   
+        }
+
+        private void chb_MotionDetThreshold_CheckedChanged(object sender, EventArgs e)
+        {
+            if (chb_MotionDetThreshold.Checked)
+            {
+                DialogResult res = MessageBox.Show("Bạn chắc chắn muốn bật chức năng này", "Xác nhận thông tin", MessageBoxButtons.OKCancel);
+                if (res == DialogResult.Cancel)
+                {
+                    chb_MotionDetThreshold.Checked = false;
+                }
+                else
+                {
+                    MotionThreshold = (int)numeric_threshold.Value;
+                }
+            }
+        }
+
+        private void chb_MotionDetCycle_CheckedChanged(object sender, EventArgs e)
+        {
+            if (chb_MotionDetCycle.Checked)
+            {
+                DialogResult res = MessageBox.Show("Bạn chắc chắn muốn bật chức năng này", "Xác nhận thông tin", MessageBoxButtons.OKCancel);
+                if (res == DialogResult.Cancel)
+                {
+                    chb_MotionDetCycle.Checked = false;
+                }
+                else
+                {
+                    timerAutoMove.Interval = (double)numeric_movement.Value;
+                }
+            }
+        }
+
+        private void btn_confirm2_Click(object sender, EventArgs e)
+        {
+            DialogResult res = MessageBox.Show("Xác nhận vùng định nghĩa là " + rec.Width.ToString() + "x" + rec.Height.ToString(), "Xác nhận thông tin", MessageBoxButtons.OKCancel);
+            if (res == DialogResult.OK)
+            {
+                isDrawing = false;
+                btn_confirm2.Enabled = false;
+                btn_clearRec2.Enabled = true; 
+            }
+        }
+
+        private void btn_clearRec2_Click(object sender, EventArgs e)
+        {
+            btn_defineReg.Enabled = true;
+            btn_clearRec2.Enabled = false;
+            startPoint = new Point(0, 0);
+            endPoint = new Point(0, 0);
         }
     }
     public class ResultLPForm
