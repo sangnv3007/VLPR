@@ -486,14 +486,16 @@ namespace Vietnamese_License_Plate_Recognition
                 // Thực hiện phép trừ nền
                 Mat foregroundMask = new Mat();
                 backgroundSubtractor.Apply(smoothFrame, foregroundMask);
-                //Invoke((MethodInvoker)(() => CvInvoke.Imshow("foregroundMask1", foregroundMask)));
                 // Điều chỉnh ngưỡng mặt nạ nền
-                CvInvoke.Threshold(foregroundMask, foregroundMask, 200, 240, ThresholdType.Binary);
+                CvInvoke.Threshold(foregroundMask, foregroundMask, 200, 240, ThresholdType.Binary);       
+                Mat kernel = CvInvoke.GetStructuringElement(ElementShape.Rectangle, new Size(3, 3), new Point(-1, -1));
+                //Bỏ các điểm nhiễu và cải thiện chất lượng của mặt nạ.
+                CvInvoke.Erode(foregroundMask, foregroundMask, kernel, new Point(-1, -1), 1, BorderType.Default, new MCvScalar(1));
+                CvInvoke.Dilate(foregroundMask, foregroundMask, kernel, new Point(-1, -1), 2, BorderType.Default, new MCvScalar(1));
                 // Hiệu chỉnh hình ảnh nhị phân
-                Mat kernel = Mat.Ones(7, 3, DepthType.Cv8U, 1);
-                CvInvoke.MorphologyEx(foregroundMask, foregroundMask, MorphOp.Close, kernel, new Point(-1, -1), 1, BorderType.Reflect, new MCvScalar(0));
+                Mat kernel_optimize = Mat.Ones(7, 3, DepthType.Cv8U, 1);
+                CvInvoke.MorphologyEx(foregroundMask, foregroundMask, MorphOp.Close, kernel_optimize, new Point(-1, -1), 1, BorderType.Reflect, new MCvScalar(0));
                 // Phát hiện contours và vẽ các bbox
-                //Invoke((MethodInvoker)(() => CvInvoke.Imshow("foregroundMask2", foregroundMask)));
                 VectorOfVectorOfPoint contours = new VectorOfVectorOfPoint();
                 CvInvoke.FindContours(foregroundMask, contours, null, RetrType.External, ChainApproxMethod.ChainApproxSimple);
                 int minArea = 900;//Kích thước vùng nhỏ nhất
