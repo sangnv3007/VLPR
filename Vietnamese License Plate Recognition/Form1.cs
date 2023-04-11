@@ -33,12 +33,13 @@ namespace Vietnamese_License_Plate_Recognition
         OCRModelConfig config = new OCRModelConfig(); 
         OCRResult ocrResult = new OCRResult();
         PaddleOCREngine engine = null;
+
         int number_failed = 0; //Số lượng nhận dạng thất bại
         //
         System.Timers.Timer timerAutoRec = new System.Timers.Timer(1000); //Chu kỳ nhận diện biển số xe. Mặc định 1000 mili giây
         System.Timers.Timer timerAutoMove = new System.Timers.Timer(1); //Chu kỳ phát hiện chuyển động. Mặc định 1 mili giây
         bool isStop = true; //Cờ bật/tắt video
-        VideoCapture capture = new VideoCapture(0, VideoCapture.API.DShow); //Khởi tạo video capture
+        VideoCapture capture; //Khởi tạo video capture
         Rectangle rec = new Rectangle();
         Point startPoint = new Point();
         Point endPoint = new Point();
@@ -76,19 +77,21 @@ namespace Vietnamese_License_Plate_Recognition
                 ProcessImage(open.FileName);      
                 //Thời gian kết thúc
                 swObj.Stop();
-                Console.WriteLine(Math.Round(swObj.Elapsed.TotalSeconds, 2).ToString() + " giây");
+                //Console.WriteLine(Math.Round(swObj.Elapsed.TotalSeconds, 2).ToString() + " giây");
                 //Tổng thời gian thực hiện               
                 label5.Text = Math.Round(swObj.Elapsed.TotalSeconds, 2).ToString() + " giây";
             }
-        }
+        }      
         public void TesseractOCR(string path)
         {
             // Load the image of the license plate
             Bitmap licensePlate = new Bitmap(path);
-
+            // Tạo đối tượng ảnh xám
+            //Image<Gray, byte> grayImage = licensePlate.ToImage<Gray, byte>();
             // Create a Tesseract OCR engine
-
-            using (var engine = new TesseractEngine(@"./tessdata", "td", EngineMode.Default))
+            //Image<Bgr, byte> imageResize = ResizeImage(licensePlate.ToImage<Bgr, byte>(), width: 250, 0);
+            //CvInvoke.Imshow("abc", imageResize.Mat);        
+            using (var engine = new TesseractEngine(@"./tessdata", "mymodel_process_0404", EngineMode.Default))
             {
                 // Set the page segmentation mode to automatic
                 engine.SetVariable("tessedit_pageseg_mode", "auto");
@@ -97,15 +100,17 @@ namespace Vietnamese_License_Plate_Recognition
                 engine.SetVariable("tessedit_char_whitelist", "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ");
 
                 // Set the image to recognize
-                using (var page = engine.Process(licensePlate))
+                using (var page = engine.Process(licensePlate, PageSegMode.SingleWord))
                 {
                     // Get the recognized text
                     var text = page.GetText();
                     //MessageBox.Show(text);
                     // Print the recognized text
-                    Console.WriteLine("License plate: " + text);
+                    textBox1.Text = text;
+                    //Console.WriteLine("License plate: " + text);
                 }
             }
+
         }
         public static List<float[]> ArrayTo2DList(Array array)
         {
@@ -130,26 +135,25 @@ namespace Vietnamese_License_Plate_Recognition
         //Hàm xử lý biển số xe        
         public void ProcessImage(string path)
         {
-            string textPlates = "";
-            float confThreshold = 0.5f;
 
-            //Thay đổi kich thước ảnh đầu vào
-
-            var img = new Image<Bgr, byte>(path);
-
-            //Dự đoán vùng chứa biển số
-
-            double scale = 1/255f;
-            //float nms_threshold = 0.4f;
-            //Crop ảnh để detect
-            var input = DnnInvoke.BlobFromImage(img, scale, new Size(416, 416), new MCvScalar(0, 0, 0), swapRB: true, crop: false);
-            Model.SetInput(input);
+            string textPlates = ""; // Thông tin biển số
+            float confThreshold = 0.8f; // Ngưỡng tin cậy
             VectorOfMat vectorOfMat = new VectorOfMat();
+            List<Image<Bgr, byte>> PlateImagesList = new List<Image<Bgr, byte>>();// List ảnh crop biển số
+            List<float> confidences = new List<float>();//List độ tin cậy 
+            var img = new Image<Bgr, byte>(path);//Đọc ảnh vào từ đường dẫn
+            double scale = 1/255f;//Tham số chuẩn hoá ảnh 0=>1
+            var input = DnnInvoke.BlobFromImage(img, scale, new Size(320, 320), new MCvScalar(0, 0, 0), swapRB: true, crop: false);
+            Model.SetInput(input);
+            //Khai báo đối tượng Stopwatch
+            Stopwatch swObj = new Stopwatch();
+            swObj.Start();      
             Model.Forward(vectorOfMat, Model.UnconnectedOutLayersNames);
-            Image<Bgr, byte> imageCrop = img.Clone();
-            List<Image<Bgr, byte>> PlateImagesList = new List<Image<Bgr, byte>>();
-            //List<Rectangle> ListRec = new List<Rectangle>();
-            List<float> confidences = new List<float>();
+            swObj.Stop();
+            //MessageBox.Show();
+            string timeYOLO = path + "\nYOLO: " + Math.Round(swObj.Elapsed.TotalSeconds, 2).ToString() + " giây";        
+            Image<Bgr, byte> imageCrop = img.CopyBlank();
+            img.CopyTo(imageCrop);//Copy ảnh gốc
 
             for (int k = 0; k < vectorOfMat.Size; k++)
             {
@@ -174,7 +178,7 @@ namespace Vietnamese_License_Plate_Recognition
                         imageCrop = img.Clone();
                         imageCrop.ROI = plate;
                         PlateImagesList.Add(imageCrop);
-                        confidences.Add(confidence);
+                        confidences.Add(confidence);                          
                         //CvInvoke.Rectangle(img, new Rectangle(x, y, width, height), new MCvScalar(0, 0, 255), 2); //Ve khung hinh chua bien so
                         //CvInvoke.Imshow("Anhrec", imageCrop.Mat);
                         //CvInvoke.WaitKey();
@@ -191,7 +195,12 @@ namespace Vietnamese_License_Plate_Recognition
                 var max_indices = confidences.IndexOf(confidences.Max());
                 Image<Bgr, byte> imageResize = ResizeImage(PlateImagesList[max_indices], width: 250, 0);
                 //CvInvoke.Imshow("abc", imageResize.Mat);
+                Stopwatch sw = new Stopwatch();
+                sw.Start();
                 ocrResult = engine.DetectText(imageResize.ToBitmap());
+                sw.Stop();
+                string timePadlleOCR = " PaddleOCR: " + Math.Round(sw.Elapsed.TotalSeconds, 2).ToString() + " giây" + "\n";
+                File.AppendAllText("ResultLP.txt", timeYOLO + timePadlleOCR + "\n");
                 List<string> arrayresult = new List<string>();
                 // Do dai toi da cua bien co the chua la 12 ky tu(bao gom ca cac ky tu "-")
                 if (String.IsNullOrEmpty(ocrResult.Text) || ocrResult.Text.Length <= 12)
@@ -215,7 +224,7 @@ namespace Vietnamese_License_Plate_Recognition
                     {
                         textPlates = string.Join("-", arrayresult);
                         pictureBox3.Image = PlateImagesList[max_indices].ToBitmap();
-                        CvInvoke.Imwrite("imgcropColor.jpg", imageResize);
+                        //CvInvoke.Imwrite("imgcropColor.jpg", imageResize);
                         textBox1.Text = textPlates;
                         LPReturnForm obj = new LPReturnForm();
                         ResultLPForm resultobj = obj.Result(textPlates, true, accuracy);
@@ -224,7 +233,7 @@ namespace Vietnamese_License_Plate_Recognition
                     else
                     {
                         pictureBox3.Image = PlateImagesList[max_indices].ToBitmap();
-                        CvInvoke.Imwrite("imgcropColor.jpg", imageResize);
+                        //CvInvoke.Imwrite("imgcropColor.jpg", imageResize);
                         LPReturnForm obj = new LPReturnForm();
                         ResultLPForm resultobj = obj.Result("Null", false, 0);
                         label2.Text = "Biển số: " + resultobj.textPlate + ", status: " + resultobj.statusPlate + ", acc: " + resultobj.accPlate;
@@ -232,7 +241,7 @@ namespace Vietnamese_License_Plate_Recognition
                 }
                 else
                 {
-                    CvInvoke.Imwrite("imgcropColor.jpg", imageResize);
+                    //CvInvoke.Imwrite("imgcropColor.jpg", imageResize);
                     LPReturnForm obj = new LPReturnForm();
                     ResultLPForm resultobj = obj.Result("Null", false, 0);
                     label2.Text = "Biển số: " + resultobj.textPlate + ", status: " + resultobj.statusPlate + ", acc: " + resultobj.accPlate;
@@ -271,7 +280,7 @@ namespace Vietnamese_License_Plate_Recognition
                 config.det_infer = modelPathroot + @"\ch_PP-OCRv3_det_infer";
                 config.cls_infer = modelPathroot + @"\ch_ppocr_mobile_v2.0_cls_infer";
                 config.rec_infer = modelPathroot + @"\ch_ppocr_server_v2.0_rec_infer";
-                config.keys = modelPathroot + @"\en_dict.txt";
+                config.keys = modelPathroot + @"\en_dict.txt";           
                 engine = new PaddleOCREngine(config, oCRParameter);
             }
             catch (Exception ex)
@@ -463,6 +472,7 @@ namespace Vietnamese_License_Plate_Recognition
         }
         private void AutoMovDetectionVideo()
         {
+            capture = new VideoCapture(0, VideoCapture.API.DShow);
             backgroundSubtractor = new BackgroundSubtractorMOG2(varThreshold: MotionThreshold);
             //Ẩn các nút xác nhận và xoá vùng định nghĩa
             btn_clearRec2.Enabled = false;
@@ -613,7 +623,6 @@ namespace Vietnamese_License_Plate_Recognition
                     if (arrayresult.Count != 0)
                     {
                         textPlates = string.Join("-", arrayresult);
-                        //CvInvoke.Imwrite("imgcropColor.jpg", PlateImagesList[0]);
                         LPReturn obj = new LPReturn();
                         result = obj.Result(textPlates, true, accuracy, PlateImagesList[0]);
                     }
@@ -637,6 +646,7 @@ namespace Vietnamese_License_Plate_Recognition
             Model = DnnInvoke.ReadNetFromDarknet(PathConfig, PathWeights);
             Model.SetPreferableBackend(Emgu.CV.Dnn.Backend.OpenCV);
             Model.SetPreferableTarget(Target.Cpu);
+            capture = new VideoCapture(0, VideoCapture.API.DShow);
             Mat frame = new Mat();
             //var classLabels = File.ReadAllLines(PathClassNames); //Lấy ra các classes YOLO
             //var vc = new VideoCapture(0, VideoCapture.API.DShow);          
