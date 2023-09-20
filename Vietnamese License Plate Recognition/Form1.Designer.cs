@@ -86,7 +86,15 @@
             this.btn_defineReg = new System.Windows.Forms.Button();
             this.numeric_movement = new System.Windows.Forms.NumericUpDown();
             this.ptb_movementDet = new System.Windows.Forms.PictureBox();
+            this.tabPage5 = new System.Windows.Forms.TabPage();
+            this.groupBox6 = new System.Windows.Forms.GroupBox();
+            this.PicCropFace = new System.Windows.Forms.PictureBox();
+            this.label15 = new System.Windows.Forms.Label();
+            this.label17 = new System.Windows.Forms.Label();
+            this.PicFace = new System.Windows.Forms.PictureBox();
             this.backgroundWorker1 = new System.ComponentModel.BackgroundWorker();
+            this.OpenCam = new System.Windows.Forms.Button();
+            this.BtnDetect = new System.Windows.Forms.Button();
             this.groupBox1.SuspendLayout();
             this.groupBox2.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)(this.pictureBox6)).BeginInit();
@@ -110,6 +118,10 @@
             ((System.ComponentModel.ISupportInitialize)(this.numeric_threshold)).BeginInit();
             ((System.ComponentModel.ISupportInitialize)(this.numeric_movement)).BeginInit();
             ((System.ComponentModel.ISupportInitialize)(this.ptb_movementDet)).BeginInit();
+            this.tabPage5.SuspendLayout();
+            this.groupBox6.SuspendLayout();
+            ((System.ComponentModel.ISupportInitialize)(this.PicCropFace)).BeginInit();
+            ((System.ComponentModel.ISupportInitialize)(this.PicFace)).BeginInit();
             this.SuspendLayout();
             // 
             // groupBox1
@@ -163,7 +175,7 @@
             this.label2.ForeColor = System.Drawing.Color.Red;
             this.label2.Location = new System.Drawing.Point(43, 186);
             this.label2.Name = "label2";
-            this.label2.Size = new System.Drawing.Size(13, 16);
+            this.label2.Size = new System.Drawing.Size(14, 16);
             this.label2.TabIndex = 4;
             this.label2.Text = "*";
             // 
@@ -174,7 +186,7 @@
             this.label5.ForeColor = System.Drawing.Color.Red;
             this.label5.Location = new System.Drawing.Point(218, 219);
             this.label5.Name = "label5";
-            this.label5.Size = new System.Drawing.Size(124, 16);
+            this.label5.Size = new System.Drawing.Size(125, 16);
             this.label5.TabIndex = 3;
             this.label5.Text = "Đơn vị đo s(giây)";
             // 
@@ -184,7 +196,7 @@
             this.label4.Font = new System.Drawing.Font("Microsoft Sans Serif", 9.75F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
             this.label4.Location = new System.Drawing.Point(43, 219);
             this.label4.Name = "label4";
-            this.label4.Size = new System.Drawing.Size(152, 16);
+            this.label4.Size = new System.Drawing.Size(153, 16);
             this.label4.TabIndex = 2;
             this.label4.Text = "Thời gian nhận dạng:";
             // 
@@ -235,7 +247,7 @@
             this.label3.Font = new System.Drawing.Font("Microsoft Sans Serif", 9.75F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
             this.label3.Location = new System.Drawing.Point(309, 34);
             this.label3.Name = "label3";
-            this.label3.Size = new System.Drawing.Size(163, 16);
+            this.label3.Size = new System.Drawing.Size(164, 16);
             this.label3.TabIndex = 2;
             this.label3.Text = "Biển số xe nhận diện được";
             // 
@@ -245,7 +257,7 @@
             this.label1.Font = new System.Drawing.Font("Microsoft Sans Serif", 9.75F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
             this.label1.Location = new System.Drawing.Point(17, 34);
             this.label1.Name = "label1";
-            this.label1.Size = new System.Drawing.Size(60, 16);
+            this.label1.Size = new System.Drawing.Size(61, 16);
             this.label1.TabIndex = 0;
             this.label1.Text = "Hình gốc";
             // 
@@ -255,6 +267,7 @@
             this.tabControl1.Controls.Add(this.tabPage2);
             this.tabControl1.Controls.Add(this.tabPage3);
             this.tabControl1.Controls.Add(this.tabPage4);
+            this.tabControl1.Controls.Add(this.tabPage5);
             this.tabControl1.Dock = System.Windows.Forms.DockStyle.Fill;
             this.tabControl1.Location = new System.Drawing.Point(0, 0);
             this.tabControl1.Name = "tabControl1";
@@ -442,7 +455,7 @@
             this.label8.ForeColor = System.Drawing.Color.Red;
             this.label8.Location = new System.Drawing.Point(290, 250);
             this.label8.Name = "label8";
-            this.label8.Size = new System.Drawing.Size(13, 16);
+            this.label8.Size = new System.Drawing.Size(14, 16);
             this.label8.TabIndex = 4;
             this.label8.Text = "*";
             // 
@@ -822,6 +835,92 @@
             this.ptb_movementDet.MouseMove += new System.Windows.Forms.MouseEventHandler(this.ptb_movementDet_MouseMove);
             this.ptb_movementDet.MouseUp += new System.Windows.Forms.MouseEventHandler(this.ptb_movementDet_MouseUp);
             // 
+            // tabPage5
+            // 
+            this.tabPage5.Controls.Add(this.groupBox6);
+            this.tabPage5.Controls.Add(this.PicFace);
+            this.tabPage5.Location = new System.Drawing.Point(4, 22);
+            this.tabPage5.Name = "tabPage5";
+            this.tabPage5.Padding = new System.Windows.Forms.Padding(3);
+            this.tabPage5.Size = new System.Drawing.Size(819, 609);
+            this.tabPage5.TabIndex = 4;
+            this.tabPage5.Text = "Face Recogniton";
+            this.tabPage5.UseVisualStyleBackColor = true;
+            // 
+            // groupBox6
+            // 
+            this.groupBox6.Controls.Add(this.BtnDetect);
+            this.groupBox6.Controls.Add(this.OpenCam);
+            this.groupBox6.Controls.Add(this.PicCropFace);
+            this.groupBox6.Controls.Add(this.label15);
+            this.groupBox6.Controls.Add(this.label17);
+            this.groupBox6.Dock = System.Windows.Forms.DockStyle.Left;
+            this.groupBox6.Location = new System.Drawing.Point(3, 453);
+            this.groupBox6.Name = "groupBox6";
+            this.groupBox6.Size = new System.Drawing.Size(393, 153);
+            this.groupBox6.TabIndex = 12;
+            this.groupBox6.TabStop = false;
+            this.groupBox6.Text = "Hình ảnh khuôn mặt";
+            // 
+            // PicCropFace
+            // 
+            this.PicCropFace.BorderStyle = System.Windows.Forms.BorderStyle.Fixed3D;
+            this.PicCropFace.Location = new System.Drawing.Point(-1, 15);
+            this.PicCropFace.Name = "PicCropFace";
+            this.PicCropFace.Size = new System.Drawing.Size(185, 126);
+            this.PicCropFace.SizeMode = System.Windows.Forms.PictureBoxSizeMode.Zoom;
+            this.PicCropFace.TabIndex = 1;
+            this.PicCropFace.TabStop = false;
+            // 
+            // label15
+            // 
+            this.label15.AutoSize = true;
+            this.label15.Font = new System.Drawing.Font("Microsoft Sans Serif", 9F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.label15.ForeColor = System.Drawing.Color.Red;
+            this.label15.Location = new System.Drawing.Point(339, 80);
+            this.label15.Name = "label15";
+            this.label15.Size = new System.Drawing.Size(35, 15);
+            this.label15.TabIndex = 5;
+            this.label15.Text = "NaN";
+            // 
+            // label17
+            // 
+            this.label17.AutoSize = true;
+            this.label17.Font = new System.Drawing.Font("Microsoft Sans Serif", 9F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.label17.Location = new System.Drawing.Point(199, 80);
+            this.label17.Name = "label17";
+            this.label17.Size = new System.Drawing.Size(143, 15);
+            this.label17.TabIndex = 4;
+            this.label17.Text = "Thời gian nhận dạng:";
+            // 
+            // PicFace
+            // 
+            this.PicFace.BorderStyle = System.Windows.Forms.BorderStyle.FixedSingle;
+            this.PicFace.Dock = System.Windows.Forms.DockStyle.Top;
+            this.PicFace.Location = new System.Drawing.Point(3, 3);
+            this.PicFace.Name = "PicFace";
+            this.PicFace.Size = new System.Drawing.Size(813, 450);
+            this.PicFace.TabIndex = 11;
+            this.PicFace.TabStop = false;
+            // 
+            // OpenCam
+            // 
+            this.OpenCam.Location = new System.Drawing.Point(202, 15);
+            this.OpenCam.Name = "OpenCam";
+            this.OpenCam.Size = new System.Drawing.Size(75, 23);
+            this.OpenCam.TabIndex = 6;
+            this.OpenCam.Text = "Open";
+            this.OpenCam.UseVisualStyleBackColor = true;
+            // 
+            // BtnDetect
+            // 
+            this.BtnDetect.Location = new System.Drawing.Point(299, 15);
+            this.BtnDetect.Name = "BtnDetect";
+            this.BtnDetect.Size = new System.Drawing.Size(75, 23);
+            this.BtnDetect.TabIndex = 7;
+            this.BtnDetect.Text = "Detect";
+            this.BtnDetect.UseVisualStyleBackColor = true;
+            // 
             // Form1
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
@@ -861,6 +960,11 @@
             ((System.ComponentModel.ISupportInitialize)(this.numeric_threshold)).EndInit();
             ((System.ComponentModel.ISupportInitialize)(this.numeric_movement)).EndInit();
             ((System.ComponentModel.ISupportInitialize)(this.ptb_movementDet)).EndInit();
+            this.tabPage5.ResumeLayout(false);
+            this.groupBox6.ResumeLayout(false);
+            this.groupBox6.PerformLayout();
+            ((System.ComponentModel.ISupportInitialize)(this.PicCropFace)).EndInit();
+            ((System.ComponentModel.ISupportInitialize)(this.PicFace)).EndInit();
             this.ResumeLayout(false);
 
         }
@@ -925,6 +1029,14 @@
         private System.Windows.Forms.CheckBox chb_MotionDetCycle;
         private System.Windows.Forms.Button btn_defineReg;
         private System.Windows.Forms.NumericUpDown numeric_movement;
+        private System.Windows.Forms.TabPage tabPage5;
+        private System.Windows.Forms.GroupBox groupBox6;
+        private System.Windows.Forms.PictureBox PicCropFace;
+        private System.Windows.Forms.Label label15;
+        private System.Windows.Forms.Label label17;
+        private System.Windows.Forms.PictureBox PicFace;
+        private System.Windows.Forms.Button BtnDetect;
+        private System.Windows.Forms.Button OpenCam;
     }
 }
 

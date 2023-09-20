@@ -141,6 +141,9 @@
     <PackageReference Include="Emgu.CV.runtime.windows">
       <Version>4.5.5.4823</Version>
     </PackageReference>
+    <PackageReference Include="FaceRecognitionDotNet">
+      <Version>1.3.0.7</Version>
+    </PackageReference>
     <PackageReference Include="PaddleOCRSharp">
       <Version>2.0.3</Version>
     </PackageReference>

@@ -169,7 +169,7 @@ namespace TD.VLPR
             try
             {
                 string textPlates = string.Empty;
-                float confThreshold = 0.8f;// Ngưỡng tin cậy
+                float confThreshold = 0.7f;// Ngưỡng tin cậy
                 double scale = 1/255f;
                 //float nms_threshold = 0.4f;
                 //Đọc ảnh từ đường dẫn
@@ -220,13 +220,13 @@ namespace TD.VLPR
                 //List<int> indices = new List<int>();
                 //indices = DnnInvoke.NMSBoxes(ListRec.ToArray(), confidences.ToArray(), confThreshold, nms_threshold).ToList();
                 //Đưa ra kết quả các ảnh đã detect được
+                List<string> arrayresult = new List<string>();
                 if (confidences.Count > 0)
                 {
                     var max_indices = confidences.IndexOf(confidences.Max());
                     //OCR bien so co confidence cao nhat
                     Image<Bgr, byte> imageResize = ResizeImage(PlateImagesList[max_indices], 250, 0);
                     ocrResult = engine.DetectText(imageResize.ToBitmap());                  
-                    List<string> arrayresult = new List<string>();
                     if (ocrResult.Text != String.Empty && ocrResult.Text.Length <= 12)
                     {
                         double accuracy = 1;

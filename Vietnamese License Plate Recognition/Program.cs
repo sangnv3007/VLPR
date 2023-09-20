@@ -33,23 +33,20 @@ namespace Vietnamese_License_Plate_Recognition
             ///
             //int i = 1;
             //var extracter = new NumberPlateExtracter();
-            //foreach (string file in Directory.EnumerateFiles(@"D:\Thang_8\Data\AnhNhanDang", "*.jpg"))
+            //foreach (string file in Directory.EnumerateFiles(@"D:\DownloadChorme\crawlLP\Cars", "*.jpg"))
             //{
             //    ResultLP resultobj = extracter.ProcessImage(file);
-            //    Console.WriteLine("Done file " + i.ToString() + "_" + file);             
+            //    CvInvoke.Imwrite(@"D:\Thang_8\Data\imgCrop\crawlLP" + i.ToString() + ".jpg", resultobj.imagePlate);
+            //    Console.WriteLine("Done file " + i.ToString() + "_" + file);
             //    if (resultobj.textPlate != null)
             //    {
-            //        if (resultobj.textPlate == "Null" || (resultobj.accPlate <= 0.9 && resultobj.accPlate > 0))
-            //        {
-            //            //CvInvoke.Imwrite(@"D:\Thang_8\Data\imgCrop\LP_" + i.ToString() + ".jpg", resultobj.imagePlate);
-            //            //i++;
-            //            string results = file + "\t" + resultobj.textPlate + "\t" + resultobj.accPlate;
-            //            File.AppendAllText("ResultLP.txt", results + "\n");
-            //            File.Copy(file, @"D:\Thang_8\Data\AnhNhanDang\TestDLL\" + Path.GetFileName(file));
-            //            File.Delete(file);
-            //        }
+            //        CvInvoke.Imwrite(@"D:\DownloadChorme\crawlLP\Cars\imgCrop\crawlLP" + i.ToString() + ".jpg", resultobj.imagePlate);
+            //        i++;
+            //        string results = file + "\t" + resultobj.textPlate + "\t" + resultobj.accPlate;
+            //        File.AppendAllText("ResultLP.txt", results + "\n");
+            //        File.Copy(file, @"D:\Thang_8\Data\AnhNhanDang\TestDLL\" + Path.GetFileName(file));
+            //        File.Delete(file);
             //    }
-            //    i++;
             //}
             ///
             //var extracter = new NumberPlateExtracter();
