@@ -246,7 +246,7 @@ namespace TD.VLPR
                         if (arrayresult.Count != 0)
                         {
                             textPlates = string.Join("-", arrayresult);
-                            //CvInvoke.Imwrite("imgcropColor.jpg", PlateImagesList[0]);
+                            //CvInvoke.Imwrite($"imgcropColor{textPlates}.jpg", PlateImagesList[0]);
                             LPReturn obj = new LPReturn();
                             result = obj.Result(textPlates, true, accuracy, PlateImagesList[0]);
                         }
@@ -255,7 +255,8 @@ namespace TD.VLPR
                             LPReturn obj = new LPReturn();
                             result = obj.Result("Null", false, 0, PlateImagesList[0]);
                         }
-                    }                  
+                    }
+                    imageResize.Dispose();
                 }               
                 else
                 {
