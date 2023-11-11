@@ -23,26 +23,26 @@ namespace Vietnamese_License_Plate_Recognition
             ///Run Apllication Form
             ///</summary>
             ///
-            //Application.EnableVisualStyles();
-            //Application.SetCompatibleTextRenderingDefault(false);
-            //Application.Run(new Form1());
+            Application.EnableVisualStyles();
+            Application.SetCompatibleTextRenderingDefault(false);
+            Application.Run(new Form1());
 
             ///<summary>
             ///Run Console Command
             ///</summary>
             ///
-            int i = 1;
-            foreach (string file in Directory.EnumerateFiles(@"D:\Download Chorme\AnhXe\AnhXe", "*.jpg"))
-            {
-                var extracter = new NumberPlateExtracter();
-                var resultobj = extracter.ProcessImage(file);
-                Console.WriteLine("Done file " + i.ToString() + "_" + file);
-                if (resultobj.textPlate != null)
-                {
-                    CvInvoke.Imwrite(@"D:\Download Chorme\AnhXe\AnhXe\imgCrop\LP_Safira" + i.ToString() + ".jpg", resultobj.imagePlate);
-                    i++;
-                }
-            }
+            //int i = 1;
+            //foreach (string file in Directory.EnumerateFiles(@"D:\Download Chorme\AnhXe\AnhXe", "*.jpg"))
+            //{
+            //    var extracter = new NumberPlateExtracter();
+            //    var resultobj = extracter.ProcessImage(file);
+            //    Console.WriteLine("Done file " + i.ToString() + "_" + file);
+            //    if (resultobj.textPlate != null)
+            //    {
+            //        CvInvoke.Imwrite(@"D:\Download Chorme\AnhXe\AnhXe\imgCrop\LP_Safira" + i.ToString() + ".jpg", resultobj.imagePlate);
+            //        i++;
+            //    }
+            //}
             ///
             //var extracter = new NumberPlateExtracter();
             //string root = Environment.CurrentDirectory;
