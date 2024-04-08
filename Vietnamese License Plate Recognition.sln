@@ -1,7 +1,7 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
-# Visual Studio Version 17
-VisualStudioVersion = 17.0.32112.339
+# Visual Studio Version 16
+VisualStudioVersion = 16.0.33529.622
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Vietnamese License Plate Recognition", "Vietnamese License Plate Recognition\Vietnamese License Plate Recognition.csproj", "{44B0AA54-E217-4960-9872-90E51692924D}"
 EndProject
@@ -17,8 +17,8 @@ Global
 		Release|x86 = Release|x86
 	EndGlobalSection
 	GlobalSection(ProjectConfigurationPlatforms) = postSolution
-		{44B0AA54-E217-4960-9872-90E51692924D}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{44B0AA54-E217-4960-9872-90E51692924D}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{44B0AA54-E217-4960-9872-90E51692924D}.Debug|Any CPU.ActiveCfg = Debug|x64
+		{44B0AA54-E217-4960-9872-90E51692924D}.Debug|Any CPU.Build.0 = Debug|x64
 		{44B0AA54-E217-4960-9872-90E51692924D}.Debug|x64.ActiveCfg = Debug|Any CPU
 		{44B0AA54-E217-4960-9872-90E51692924D}.Debug|x64.Build.0 = Debug|Any CPU
 		{44B0AA54-E217-4960-9872-90E51692924D}.Debug|x86.ActiveCfg = Debug|Any CPU

@@ -1,6 +1,6 @@
 ﻿namespace Vietnamese_License_Plate_Recognition
 {
-    partial class Form1
+    partial class FormMain
     {
         /// <summary>
         /// Required designer variable.
@@ -28,7 +28,7 @@
         /// </summary>
         private void InitializeComponent()
         {
-            System.ComponentModel.ComponentResourceManager resources = new System.ComponentModel.ComponentResourceManager(typeof(Form1));
+            System.ComponentModel.ComponentResourceManager resources = new System.ComponentModel.ComponentResourceManager(typeof(FormMain));
             this.groupBox1 = new System.Windows.Forms.GroupBox();
             this.groupBox2 = new System.Windows.Forms.GroupBox();
             this.label6 = new System.Windows.Forms.Label();
@@ -88,13 +88,13 @@
             this.ptb_movementDet = new System.Windows.Forms.PictureBox();
             this.tabPage5 = new System.Windows.Forms.TabPage();
             this.groupBox6 = new System.Windows.Forms.GroupBox();
+            this.BtnDetect = new System.Windows.Forms.Button();
+            this.OpenCam = new System.Windows.Forms.Button();
             this.PicCropFace = new System.Windows.Forms.PictureBox();
             this.label15 = new System.Windows.Forms.Label();
             this.label17 = new System.Windows.Forms.Label();
             this.PicFace = new System.Windows.Forms.PictureBox();
             this.backgroundWorker1 = new System.ComponentModel.BackgroundWorker();
-            this.OpenCam = new System.Windows.Forms.Button();
-            this.BtnDetect = new System.Windows.Forms.Button();
             this.groupBox1.SuspendLayout();
             this.groupBox2.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)(this.pictureBox6)).BeginInit();
@@ -237,7 +237,7 @@
             this.pictureBox3.Location = new System.Drawing.Point(422, 61);
             this.pictureBox3.Name = "pictureBox3";
             this.pictureBox3.Size = new System.Drawing.Size(364, 252);
-            this.pictureBox3.SizeMode = System.Windows.Forms.PictureBoxSizeMode.Zoom;
+            this.pictureBox3.SizeMode = System.Windows.Forms.PictureBoxSizeMode.StretchImage;
             this.pictureBox3.TabIndex = 7;
             this.pictureBox3.TabStop = false;
             // 
@@ -862,6 +862,24 @@
             this.groupBox6.TabStop = false;
             this.groupBox6.Text = "Hình ảnh khuôn mặt";
             // 
+            // BtnDetect
+            // 
+            this.BtnDetect.Location = new System.Drawing.Point(299, 15);
+            this.BtnDetect.Name = "BtnDetect";
+            this.BtnDetect.Size = new System.Drawing.Size(75, 23);
+            this.BtnDetect.TabIndex = 7;
+            this.BtnDetect.Text = "Detect";
+            this.BtnDetect.UseVisualStyleBackColor = true;
+            // 
+            // OpenCam
+            // 
+            this.OpenCam.Location = new System.Drawing.Point(202, 15);
+            this.OpenCam.Name = "OpenCam";
+            this.OpenCam.Size = new System.Drawing.Size(75, 23);
+            this.OpenCam.TabIndex = 6;
+            this.OpenCam.Text = "Open";
+            this.OpenCam.UseVisualStyleBackColor = true;
+            // 
             // PicCropFace
             // 
             this.PicCropFace.BorderStyle = System.Windows.Forms.BorderStyle.Fixed3D;
@@ -903,32 +921,14 @@
             this.PicFace.TabIndex = 11;
             this.PicFace.TabStop = false;
             // 
-            // OpenCam
-            // 
-            this.OpenCam.Location = new System.Drawing.Point(202, 15);
-            this.OpenCam.Name = "OpenCam";
-            this.OpenCam.Size = new System.Drawing.Size(75, 23);
-            this.OpenCam.TabIndex = 6;
-            this.OpenCam.Text = "Open";
-            this.OpenCam.UseVisualStyleBackColor = true;
-            // 
-            // BtnDetect
-            // 
-            this.BtnDetect.Location = new System.Drawing.Point(299, 15);
-            this.BtnDetect.Name = "BtnDetect";
-            this.BtnDetect.Size = new System.Drawing.Size(75, 23);
-            this.BtnDetect.TabIndex = 7;
-            this.BtnDetect.Text = "Detect";
-            this.BtnDetect.UseVisualStyleBackColor = true;
-            // 
-            // Form1
+            // FormMain
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.ClientSize = new System.Drawing.Size(827, 635);
             this.Controls.Add(this.tabControl1);
-            this.Name = "Form1";
-            this.StartPosition = System.Windows.Forms.FormStartPosition.Manual;
+            this.Name = "FormMain";
+            this.StartPosition = System.Windows.Forms.FormStartPosition.CenterScreen;
             this.Text = "TD Parking";
             this.Load += new System.EventHandler(this.Form1_Load);
             this.groupBox1.ResumeLayout(false);
